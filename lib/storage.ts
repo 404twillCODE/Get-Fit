@@ -11,10 +11,6 @@ export type DeficitEntry = {
   };
   fitness?: {
     totalCalories: number;
-    exercise: string;
-    standHours: number;
-    steps: number;
-    distance: number;
   };
   caloriesEaten: number;
   caloriesBurned: number;

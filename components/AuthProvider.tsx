@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabaseClient";
-import { ensureUserData } from "@/lib/dataStore";
+import { ensureUserData, startPeriodicSync, retryFailedSyncs } from "@/lib/dataStore";
 
 type AuthContextValue = {
   session: Session | null;
@@ -26,42 +26,96 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isGuest, setIsGuest] = useState(false);
 
   useEffect(() => {
-    const guestStored = localStorage.getItem(GUEST_MODE_KEY);
-    setIsGuest(guestStored === "true");
+    let mounted = true;
+    let subscription: { subscription: { unsubscribe: () => void } } | null = null;
 
-    if (!isSupabaseConfigured) {
-      setLoading(false);
-      return;
-    }
-
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      setLoading(false);
-      return;
-    }
-
-    supabase.auth.getSession().then(async ({ data }) => {
-      setSession(data.session ?? null);
-      if (data.session?.user) {
-        setIsGuest(false);
-        localStorage.removeItem(GUEST_MODE_KEY);
-        await ensureUserData();
-      }
-      setLoading(false);
-    });
-
-    const { data: subscription } = supabase.auth.onAuthStateChange(
-      async (_event, newSession) => {
-        setSession(newSession);
-        if (newSession?.user) {
-          setIsGuest(false);
-          localStorage.removeItem(GUEST_MODE_KEY);
-          await ensureUserData();
+    const initAuth = async () => {
+      try {
+        if (typeof window !== "undefined") {
+          const guestStored = localStorage.getItem(GUEST_MODE_KEY);
+          setIsGuest(guestStored === "true");
         }
+
+        if (!isSupabaseConfigured) {
+          if (mounted) setLoading(false);
+          return;
+        }
+
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+          if (mounted) setLoading(false);
+          return;
+        }
+
+        try {
+          const { data, error } = await supabase.auth.getSession();
+          if (!mounted) return;
+
+          if (error) {
+            console.error("Auth session error:", error);
+            if (mounted) setLoading(false);
+            return;
+          }
+
+          if (mounted) {
+            setSession(data.session ?? null);
+              if (data.session?.user) {
+                setIsGuest(false);
+                if (typeof window !== "undefined") {
+                  localStorage.removeItem(GUEST_MODE_KEY);
+                }
+                try {
+                  await ensureUserData();
+                  // Retry any failed syncs when user logs in
+                  await retryFailedSyncs();
+                } catch (err) {
+                  console.error("Error ensuring user data:", err);
+                }
+              }
+            setLoading(false);
+          }
+        } catch (err) {
+          console.error("Error getting session:", err);
+          if (mounted) setLoading(false);
+        }
+
+        if (mounted && supabase) {
+          const { data: subData } = supabase.auth.onAuthStateChange(
+            async (_event, newSession) => {
+              if (!mounted) return;
+              setSession(newSession);
+              if (newSession?.user) {
+                setIsGuest(false);
+                if (typeof window !== "undefined") {
+                  localStorage.removeItem(GUEST_MODE_KEY);
+                }
+                try {
+                  await ensureUserData();
+                  // Retry any failed syncs when user logs in
+                  await retryFailedSyncs();
+                } catch (err) {
+                  console.error("Error ensuring user data:", err);
+                }
+              }
+            }
+          );
+          subscription = subData;
+        }
+      } catch (err) {
+        console.error("Auth initialization error:", err);
+        if (mounted) setLoading(false);
       }
-    );
+    };
+
+    initAuth();
+
+    // Start periodic sync for reliable Supabase uploads
+    if (typeof window !== "undefined") {
+      startPeriodicSync();
+    }
 
     return () => {
+      mounted = false;
       subscription?.subscription.unsubscribe();
     };
   }, []);
