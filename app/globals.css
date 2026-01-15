@@ -34,6 +34,11 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Ensure active states work on mobile */
+a:active {
+  opacity: 1;
+}
+
 /* Mobile app scrollbar */
 ::-webkit-scrollbar {
   width: 4px;

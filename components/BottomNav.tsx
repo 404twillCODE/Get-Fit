@@ -3,9 +3,11 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 const BottomNav = () => {
   const pathname = usePathname();
+  const [pressedButton, setPressedButton] = useState<string | null>(null);
 
   const navItems = [
     { name: "Home", path: "/", icon: "🏠" },
@@ -25,22 +27,26 @@ const BottomNav = () => {
         <div className="flex items-center justify-around h-16 sm:h-16">
           {navItems.map((item) => {
             const isActive = pathname === item.path;
+            const isPressed = pressedButton === item.path;
             return (
               <Link
                 key={item.path}
                 href={item.path}
-                className="flex-1 flex flex-col items-center justify-center relative min-h-[44px] touch-manipulation active:scale-95 transition-transform"
+                className="flex-1 flex flex-col items-center justify-center relative min-h-[44px] touch-manipulation"
+                onTouchStart={() => setPressedButton(item.path)}
+                onTouchEnd={() => setPressedButton(null)}
+                onMouseDown={() => setPressedButton(item.path)}
+                onMouseUp={() => setPressedButton(null)}
+                onMouseLeave={() => setPressedButton(null)}
               >
-                {isActive && (
+                {(isActive || isPressed) && (
                   <motion.div
-                    layoutId="activeTab"
+                    layoutId={isActive ? "activeTab" : undefined}
                     className="absolute inset-0 bg-[rgb(38,38,38)] rounded-t-2xl"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    initial={false}
                   />
                 )}
-                <motion.div
-                  className="absolute inset-0 bg-[rgb(38,38,38)] rounded-t-2xl opacity-0 active:opacity-100 transition-opacity duration-150"
-                />
                 <motion.span
                   className="text-xl sm:text-2xl mb-0.5 sm:mb-1 relative z-10"
                   animate={{ scale: isActive ? 1.1 : 1 }}
