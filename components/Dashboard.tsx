@@ -94,12 +94,12 @@ const Dashboard = () => {
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="pt-12 pb-8 px-6"
+        className="pt-12 pb-6 sm:pb-8 px-4 sm:px-6"
       >
-        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-white via-white to-white/80 bg-clip-text text-transparent">
+        <h1 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-white via-white to-white/80 bg-clip-text text-transparent">
           Get Fit
         </h1>
-        <p className="text-white/60 text-sm">
+        <p className="text-white/60 text-xs sm:text-sm">
           {new Date().toLocaleDateString("en-US", {
             weekday: "long",
             month: "long",
@@ -109,16 +109,16 @@ const Dashboard = () => {
       </motion.header>
 
       {/* Quick Stats */}
-      <div className="px-6 mb-6">
+      <div className="px-4 sm:px-6 mb-4 sm:mb-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-gradient-to-br from-white/5 to-white/0 rounded-3xl p-6 border border-white/10"
+          className="bg-gradient-to-br from-white/5 to-white/0 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-white/10"
         >
-          <div className="text-white/60 text-sm mb-2">Today&apos;s Deficit</div>
+          <div className="text-white/60 text-xs sm:text-sm mb-2">Today&apos;s Deficit</div>
           <div
-            className={`text-4xl font-bold ${
+            className={`text-3xl sm:text-4xl font-bold ${
               deficit <= 0 ? "text-green-400" : "text-red-400"
             }`}
           >
@@ -132,23 +132,23 @@ const Dashboard = () => {
       </div>
 
       {/* Insights */}
-      <div className="px-6 mb-6">
+      <div className="px-4 sm:px-6 mb-4 sm:mb-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12 }}
-          className="bg-white/5 rounded-2xl p-5 border border-white/10"
+          className="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10"
         >
-          <div className="text-white/60 text-sm mb-4">Insights</div>
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="rounded-xl bg-white/5 py-3 px-2 border border-white/10">
+          <div className="text-white/60 text-xs sm:text-sm mb-3 sm:mb-4">Insights</div>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 text-center">
+            <div className="rounded-xl bg-white/5 py-2 sm:py-3 px-1 sm:px-2 border border-white/10">
               <div className="text-xs text-white/50 mb-1">Streak</div>
-              <div className="text-lg font-semibold">{insights.streak} days</div>
+              <div className="text-base sm:text-lg font-semibold">{insights.streak} days</div>
             </div>
-            <div className="rounded-xl bg-white/5 py-3 px-2 border border-white/10">
+            <div className="rounded-xl bg-white/5 py-2 sm:py-3 px-1 sm:px-2 border border-white/10">
               <div className="text-xs text-white/50 mb-1">7-Day Avg</div>
               <div
-                className={`text-lg font-semibold ${
+                className={`text-base sm:text-lg font-semibold ${
                   insights.weeklyAverage >= 0 ? "text-green-400" : "text-red-400"
                 }`}
               >
@@ -156,9 +156,9 @@ const Dashboard = () => {
                 {insights.weeklyAverage}
               </div>
             </div>
-            <div className="rounded-xl bg-white/5 py-3 px-2 border border-white/10">
+            <div className="rounded-xl bg-white/5 py-2 sm:py-3 px-1 sm:px-2 border border-white/10">
               <div className="text-xs text-white/50 mb-1">Days Logged</div>
-              <div className="text-lg font-semibold">{insights.totalLoggedDays}</div>
+              <div className="text-base sm:text-lg font-semibold">{insights.totalLoggedDays}</div>
             </div>
           </div>
         </motion.div>
@@ -166,24 +166,24 @@ const Dashboard = () => {
 
 
       {/* Quick Actions */}
-      <div className="px-6 space-y-4 mb-6">
+      <div className="px-4 sm:px-6 space-y-3 sm:space-y-4 mb-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Link href="/workouts">
-            <div className="bg-white/5 rounded-2xl p-5 border border-white/10 active:bg-white/10 transition-colors">
+          <Link href="/workouts" className="block">
+            <div className="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10 active:bg-white/10 hover:bg-white/10 transition-all touch-manipulation min-h-[80px] sm:min-h-[auto]">
               <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-white/60 text-sm mb-1">Workout Routine</div>
-                  <div className="text-xl font-semibold">
+                <div className="flex-1 min-w-0">
+                  <div className="text-white/60 text-xs sm:text-sm mb-1">Workout Routine</div>
+                  <div className="text-lg sm:text-xl font-semibold truncate">
                     {todayWorkouts > 0
                       ? `${todayWorkouts} Exercise${todayWorkouts !== 1 ? "s" : ""}`
                       : "Start Workout"}
                   </div>
                 </div>
-                <div className="text-3xl">💪</div>
+                <div className="text-2xl sm:text-3xl ml-3 flex-shrink-0">💪</div>
               </div>
             </div>
           </Link>
@@ -194,18 +194,38 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <Link href="/calories">
-            <div className="bg-white/5 rounded-2xl p-5 border border-white/10 active:bg-white/10 transition-colors">
+          <Link href="/calories" className="block">
+            <div className="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10 active:bg-white/10 hover:bg-white/10 transition-all touch-manipulation min-h-[80px] sm:min-h-[auto]">
               <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-white/60 text-sm mb-1">Deficit Calculator</div>
-                  <div className="text-xl font-semibold">
+                <div className="flex-1 min-w-0">
+                  <div className="text-white/60 text-xs sm:text-sm mb-1">Deficit Calculator</div>
+                  <div className="text-lg sm:text-xl font-semibold truncate">
                     {todayCalories.eaten > 0 || todayCalories.burned > 0
                       ? "Update Today"
                       : "Log Data"}
                   </div>
                 </div>
-                <div className="text-3xl">🔥</div>
+                <div className="text-2xl sm:text-3xl ml-3 flex-shrink-0">🔥</div>
+              </div>
+            </div>
+          </Link>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <Link href="/insights" className="block">
+            <div className="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10 active:bg-white/10 hover:bg-white/10 transition-all touch-manipulation min-h-[80px] sm:min-h-[auto]">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <div className="text-white/60 text-xs sm:text-sm mb-1">Insights</div>
+                  <div className="text-lg sm:text-xl font-semibold truncate">
+                    View Stats
+                  </div>
+                </div>
+                <div className="text-2xl sm:text-3xl ml-3 flex-shrink-0">📈</div>
               </div>
             </div>
           </Link>
@@ -213,14 +233,14 @@ const Dashboard = () => {
       </div>
 
       {/* Weekly Progress */}
-      <div className="px-6 mb-6">
+      <div className="px-4 sm:px-6 mb-6 pb-20 sm:pb-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-white/5 rounded-2xl p-5 border border-white/10"
+          transition={{ delay: 0.5 }}
+          className="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10"
         >
-          <div className="text-white/60 text-sm mb-4">This Week</div>
+          <div className="text-white/60 text-xs sm:text-sm mb-3 sm:mb-4">This Week</div>
           <div className="flex justify-between items-end gap-2">
             {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => {
               const dayIndex = index;
