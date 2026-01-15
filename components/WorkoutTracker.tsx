@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
+import { loadAppData, updateAppData } from "@/lib/dataStore";
 
 interface Set {
   setNumber: number;
@@ -46,90 +47,87 @@ const WorkoutTracker = () => {
     loadDayWorkouts();
   }, [currentDayIndex]);
 
-  const loadWorkoutSchedule = () => {
-    const stored = localStorage.getItem("workoutSchedule");
-    if (stored) {
-      setWorkoutSchedule(JSON.parse(stored));
-    }
+  const loadWorkoutSchedule = async () => {
+    const data = await loadAppData();
+    setWorkoutSchedule(data.workoutSchedule);
   };
 
-  const loadDayWorkouts = () => {
-    const stored = localStorage.getItem("savedWorkouts");
-    if (stored) {
-      const allWorkouts = JSON.parse(stored);
-      setWorkouts(allWorkouts[currentDayIndex] || []);
-    }
+  const loadDayWorkouts = async () => {
+    const data = await loadAppData();
+    setWorkouts(data.savedWorkouts[currentDayIndex] || []);
   };
 
-  const saveDayWorkouts = () => {
-    const stored = localStorage.getItem("savedWorkouts");
-    const allWorkouts = stored ? JSON.parse(stored) : Array(7).fill([]);
-    allWorkouts[currentDayIndex] = [...workouts];
-    localStorage.setItem("savedWorkouts", JSON.stringify(allWorkouts));
+  const saveDayWorkouts = async (nextWorkouts: Exercise[]) => {
+    await updateAppData((current) => {
+      const savedWorkouts = [...current.savedWorkouts];
+      savedWorkouts[currentDayIndex] = [...nextWorkouts];
+      return { ...current, savedWorkouts };
+    });
   };
 
-  const addExercise = (exercise: Exercise) => {
+  const addExercise = async (exercise: Exercise) => {
+    let nextWorkouts: Exercise[] = [];
     if (editingExercise) {
-      setWorkouts(
-        workouts.map((e) => (e.id === editingExercise.id ? exercise : e))
+      nextWorkouts = workouts.map((e) =>
+        e.id === editingExercise.id ? exercise : e
       );
       setEditingExercise(null);
     } else {
-      setWorkouts([...workouts, exercise]);
+      nextWorkouts = [...workouts, exercise];
     }
-    saveDayWorkouts();
+    setWorkouts(nextWorkouts);
+    await saveDayWorkouts(nextWorkouts);
     setShowModal(false);
   };
 
-  const removeExercise = (id: number) => {
-    setWorkouts(workouts.filter((e) => e.id !== id));
-    saveDayWorkouts();
+  const removeExercise = async (id: number) => {
+    const nextWorkouts = workouts.filter((e) => e.id !== id);
+    setWorkouts(nextWorkouts);
+    await saveDayWorkouts(nextWorkouts);
   };
 
-  const toggleSetComplete = (exerciseId: number, setIndex: number) => {
-    setWorkouts(
-      workouts.map((exercise) => {
-        if (exercise.id === exerciseId && exercise.sets) {
-          const updatedSets = [...exercise.sets];
-          updatedSets[setIndex].completed =
-            !updatedSets[setIndex].completed;
-          return { ...exercise, sets: updatedSets };
-        }
-        return exercise;
-      })
+  const toggleSetComplete = async (exerciseId: number, setIndex: number) => {
+    const nextWorkouts = workouts.map((exercise) => {
+      if (exercise.id === exerciseId && exercise.sets) {
+        const updatedSets = [...exercise.sets];
+        updatedSets[setIndex].completed = !updatedSets[setIndex].completed;
+        return { ...exercise, sets: updatedSets };
+      }
+      return exercise;
+    });
+    setWorkouts(nextWorkouts);
+    await saveDayWorkouts(nextWorkouts);
+  };
+
+  const toggleExerciseComplete = async (id: number) => {
+    const nextWorkouts = workouts.map((e) =>
+      e.id === id ? { ...e, completed: !e.completed } : e
     );
-    saveDayWorkouts();
+    setWorkouts(nextWorkouts);
+    await saveDayWorkouts(nextWorkouts);
   };
 
-  const toggleExerciseComplete = (id: number) => {
-    setWorkouts(
-      workouts.map((e) =>
-        e.id === id ? { ...e, completed: !e.completed } : e
-      )
-    );
-    saveDayWorkouts();
-  };
-
-  const completeWorkout = () => {
+  const completeWorkout = async () => {
     if (workouts.length === 0) {
       alert("Add at least one exercise before completing the workout");
       return;
     }
 
-    const history = JSON.parse(
-      localStorage.getItem("workoutHistory") || "[]"
-    );
-    history.push({
+    const workoutEntry = {
       date: new Date().toISOString().split("T")[0],
       timestamp: Date.now(),
       dayOfWeek: currentDayIndex,
       workoutType: workoutSchedule[currentDayIndex],
       exercises: [...workouts],
-    });
-    localStorage.setItem("workoutHistory", JSON.stringify(history));
+    };
+
+    await updateAppData((current) => ({
+      ...current,
+      workoutHistory: [...current.workoutHistory, workoutEntry],
+    }));
 
     setWorkouts([]);
-    saveDayWorkouts();
+    await saveDayWorkouts([]);
     alert("Workout completed and saved to history!");
   };
 

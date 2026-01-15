@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { loadAppData } from "@/lib/dataStore";
 
 const Dashboard = () => {
   const [todayCalories, setTodayCalories] = useState({ eaten: 0, burned: 0 });
@@ -10,39 +11,85 @@ const Dashboard = () => {
   const [weeklyWorkouts, setWeeklyWorkouts] = useState<boolean[]>(
     Array(7).fill(false)
   );
+  const [insights, setInsights] = useState({
+    totalLoggedDays: 0,
+    weeklyAverage: 0,
+    streak: 0,
+  });
 
   useEffect(() => {
-    // Load today's deficit data
-    const deficitData = localStorage.getItem("deficitEntries");
-    if (deficitData) {
-      const entries = JSON.parse(deficitData);
-      const today = new Date().toISOString().split("T")[0];
-      const todayEntry = entries.find((e: any) => e.date === today);
+    let isMounted = true;
+    const loadDashboardData = async () => {
+      const data = await loadAppData();
+      if (!isMounted) return;
+
+      const todayKey = new Date().toISOString().split("T")[0];
+      const todayEntry = data.deficitEntries.find(
+        (entry) => entry.date === todayKey
+      );
+
       if (todayEntry) {
         setTodayCalories({
           eaten: todayEntry.caloriesEaten || 0,
           burned: todayEntry.caloriesBurned || 0,
         });
       }
-    }
 
-    // Load today's workout data
-    const workoutData = localStorage.getItem("savedWorkouts");
-    if (workoutData) {
-      const workouts = JSON.parse(workoutData);
       const todayIndex = new Date().getDay();
-      const todayWorkout = workouts[todayIndex] || [];
+      const todayWorkout = data.savedWorkouts[todayIndex] || [];
       setTodayWorkouts(todayWorkout.length);
 
-      // Load weekly workout data
-      const weekly = workouts.map((w: any[]) => (w?.length || 0) > 0);
+      const weekly = data.savedWorkouts.map(
+        (workout) => (workout?.length || 0) > 0
+      );
       setWeeklyWorkouts(weekly);
-    }
+
+      const sorted = [...data.deficitEntries].sort((a, b) =>
+        b.date.localeCompare(a.date)
+      );
+      const totalLoggedDays = sorted.length;
+
+      const last7Days = new Date();
+      last7Days.setDate(last7Days.getDate() - 6);
+      last7Days.setHours(0, 0, 0, 0);
+
+      const weekEntries = sorted.filter((entry) => {
+        const entryDate = new Date(entry.date);
+        return entryDate >= last7Days;
+      });
+      const weeklyAverage =
+        weekEntries.length > 0
+          ? Math.round(
+              weekEntries.reduce((sum, entry) => sum + entry.deficit, 0) /
+                weekEntries.length
+            )
+          : 0;
+
+      const entryDates = new Set(sorted.map((entry) => entry.date));
+      let streak = 0;
+      const cursor = new Date();
+      cursor.setHours(0, 0, 0, 0);
+
+      while (true) {
+        const cursorKey = cursor.toISOString().split("T")[0];
+        if (!entryDates.has(cursorKey)) break;
+        streak += 1;
+        cursor.setDate(cursor.getDate() - 1);
+      }
+
+      setInsights({ totalLoggedDays, weeklyAverage, streak });
+    };
+
+    loadDashboardData();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const deficit = todayCalories.eaten - todayCalories.burned;
 
-  const copyDailyLog = () => {
+
+  const copyDailyLog = async () => {
     const today = new Date();
     const todayKey = today.toISOString().split("T")[0];
     const todayIndex = today.getDay();
@@ -55,54 +102,43 @@ const Dashboard = () => {
 
     let logText = `📊 Daily Log - ${dayName}, ${dateStr}\n\n`;
 
-    // Get nutrition data
-    const deficitData = localStorage.getItem("deficitEntries");
-    if (deficitData) {
-      const entries = JSON.parse(deficitData);
-      const todayEntry = entries.find((e: any) => e.date === todayKey);
-      if (todayEntry) {
-        logText += `🔥 NUTRITION\n`;
-        if (todayEntry.nutrition) {
-          const n = todayEntry.nutrition;
-          logText += `Calories: ${n.calories}\n`;
-          if (n.fat > 0) logText += `Fat: ${n.fat}g\n`;
-          if (n.carbs > 0) logText += `Carbs: ${n.carbs}g\n`;
-          if (n.protein > 0) logText += `Protein: ${n.protein}g\n`;
-          if (n.fiber > 0) logText += `Fiber: ${n.fiber}g\n`;
-          if (n.sodium > 0) logText += `Sodium: ${n.sodium}mg\n`;
-          if (n.calcium > 0) logText += `Calcium: ${n.calcium}mg\n`;
-        }
-        logText += `\n`;
-      }
+    const data = await loadAppData();
+    const todayEntry = data.deficitEntries.find(
+      (entry) => entry.date === todayKey
+    );
+
+    if (todayEntry?.nutrition) {
+      logText += `🔥 NUTRITION\n`;
+      const n = todayEntry.nutrition;
+      logText += `Calories: ${n.calories}\n`;
+      if (n.fat > 0) logText += `Fat: ${n.fat}g\n`;
+      if (n.carbs > 0) logText += `Carbs: ${n.carbs}g\n`;
+      if (n.protein > 0) logText += `Protein: ${n.protein}g\n`;
+      if (n.fiber > 0) logText += `Fiber: ${n.fiber}g\n`;
+      if (n.sodium > 0) logText += `Sodium: ${n.sodium}mg\n`;
+      if (n.calcium > 0) logText += `Calcium: ${n.calcium}mg\n`;
+      logText += `\n`;
     }
 
-    // Get fitness data
-    const deficitData2 = localStorage.getItem("deficitEntries");
-    if (deficitData2) {
-      const entries = JSON.parse(deficitData2);
-      const todayEntry = entries.find((e: any) => e.date === todayKey);
-      if (todayEntry && todayEntry.fitness) {
-        const f = todayEntry.fitness;
-        logText += `⌚ ACTIVITY\n`;
-        if (f.totalCalories > 0) logText += `Total Calories: ${f.totalCalories}\n`;
-        if (f.exercise) logText += `Exercise: ${f.exercise}\n`;
-        if (f.standHours > 0) logText += `Stand Hours: ${f.standHours}\n`;
-        if (f.steps > 0) logText += `Steps: ${f.steps.toLocaleString()}\n`;
-        if (f.distance > 0) logText += `Distance: ${f.distance} miles\n`;
-        logText += `\n`;
-      }
+    if (todayEntry?.fitness) {
+      const f = todayEntry.fitness;
+      logText += `⌚ ACTIVITY\n`;
+      if (f.totalCalories > 0) logText += `Total Calories: ${f.totalCalories}\n`;
+      if (f.exercise) logText += `Exercise: ${f.exercise}\n`;
+      if (f.standHours > 0) logText += `Stand Hours: ${f.standHours}\n`;
+      if (f.steps > 0) logText += `Steps: ${f.steps.toLocaleString()}\n`;
+      if (f.distance > 0) logText += `Distance: ${f.distance} miles\n`;
+      logText += `\n`;
     }
 
     // Get completed workouts
-    const workoutData = localStorage.getItem("savedWorkouts");
-    if (workoutData) {
-      const workouts = JSON.parse(workoutData);
-      const todayWorkout = workouts[todayIndex] || [];
-      const completedExercises = todayWorkout.filter((ex: any) => {
-        if (ex.type === "strength" && ex.sets) {
-          return ex.sets.some((set: any) => set.completed);
+    if (data.savedWorkouts.length > 0) {
+      const todayWorkout = data.savedWorkouts[todayIndex] || [];
+      const completedExercises = todayWorkout.filter((exercise: any) => {
+        if (exercise.type === "strength" && exercise.sets) {
+          return exercise.sets.some((set: any) => set.completed);
         }
-        return ex.completed;
+        return exercise.completed;
       });
 
       if (completedExercises.length > 0) {
@@ -183,6 +219,39 @@ const Dashboard = () => {
           </div>
           <div className="text-white/40 text-xs mt-2">
             {todayCalories.burned} burned - {todayCalories.eaten} eaten
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Insights */}
+      <div className="px-6 mb-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
+          className="bg-white/5 rounded-2xl p-5 border border-white/10"
+        >
+          <div className="text-white/60 text-sm mb-4">Insights</div>
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="rounded-xl bg-white/5 py-3 px-2 border border-white/10">
+              <div className="text-xs text-white/50 mb-1">Streak</div>
+              <div className="text-lg font-semibold">{insights.streak} days</div>
+            </div>
+            <div className="rounded-xl bg-white/5 py-3 px-2 border border-white/10">
+              <div className="text-xs text-white/50 mb-1">7-Day Avg</div>
+              <div
+                className={`text-lg font-semibold ${
+                  insights.weeklyAverage >= 0 ? "text-green-400" : "text-red-400"
+                }`}
+              >
+                {insights.weeklyAverage >= 0 ? "+" : ""}
+                {insights.weeklyAverage}
+              </div>
+            </div>
+            <div className="rounded-xl bg-white/5 py-3 px-2 border border-white/10">
+              <div className="text-xs text-white/50 mb-1">Days Logged</div>
+              <div className="text-lg font-semibold">{insights.totalLoggedDays}</div>
+            </div>
           </div>
         </motion.div>
       </div>

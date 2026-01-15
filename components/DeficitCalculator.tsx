@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
+import { loadAppData, updateAppData } from "@/lib/dataStore";
 
 interface NutritionData {
   calories: number;
@@ -75,11 +76,9 @@ const DeficitCalculator = () => {
     return date.toISOString().split("T")[0];
   };
 
-  const loadEntries = () => {
-    const stored = localStorage.getItem("deficitEntries");
-    if (stored) {
-      setEntries(JSON.parse(stored));
-    }
+  const loadEntries = async () => {
+    const data = await loadAppData();
+    setEntries(data.deficitEntries);
   };
 
   const loadTodayData = () => {
@@ -573,7 +572,7 @@ const DeficitCalculator = () => {
     }
   };
 
-  const saveEntry = () => {
+  const saveEntry = async () => {
     const caloriesEaten = nutritionData.calories || 0;
     const caloriesBurned = fitnessData.totalCalories || 0;
     const deficit = caloriesEaten - caloriesBurned;
@@ -592,7 +591,10 @@ const DeficitCalculator = () => {
     updatedEntries.push(newEntry);
     updatedEntries.sort((a, b) => b.date.localeCompare(a.date));
 
-    localStorage.setItem("deficitEntries", JSON.stringify(updatedEntries));
+    await updateAppData((current) => ({
+      ...current,
+      deficitEntries: updatedEntries,
+    }));
     setEntries(updatedEntries);
     setCurrentEntry(newEntry);
   };

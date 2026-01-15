@@ -1,0 +1,8 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Get Fit icon">
+  <rect width="512" height="512" rx="96" fill="#0a0a0a"/>
+  <rect x="48" y="48" width="416" height="416" rx="88" fill="#0f172a"/>
+  <circle cx="256" cy="256" r="136" fill="#111827"/>
+  <path d="M172 248h168v16H172z" fill="#e5e7eb"/>
+  <path d="M172 216h48v80h-48zM292 216h48v80h-48z" fill="#e5e7eb"/>
+  <path d="M206 188h100v16H206zM206 308h100v16H206z" fill="#9ca3af"/>
+</svg>
