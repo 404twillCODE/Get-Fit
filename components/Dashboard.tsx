@@ -172,8 +172,8 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Link href="/workouts" className="block">
-            <div className="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10 active:bg-white/10 hover:bg-white/10 transition-all touch-manipulation min-h-[80px] sm:min-h-[auto]">
+          <Link href="/workouts" className="block active:scale-[0.98] transition-transform touch-manipulation">
+            <div className="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10 hover:bg-white/10 active:bg-white/15 active:border-white/20 transition-all touch-manipulation min-h-[80px] sm:min-h-[auto]">
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="text-white/60 text-xs sm:text-sm mb-1">Workout Routine</div>
@@ -194,8 +194,8 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <Link href="/calories" className="block">
-            <div className="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10 active:bg-white/10 hover:bg-white/10 transition-all touch-manipulation min-h-[80px] sm:min-h-[auto]">
+          <Link href="/calories" className="block active:scale-[0.98] transition-transform touch-manipulation">
+            <div className="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10 hover:bg-white/10 active:bg-white/15 active:border-white/20 transition-all touch-manipulation min-h-[80px] sm:min-h-[auto]">
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="text-white/60 text-xs sm:text-sm mb-1">Deficit Calculator</div>
@@ -216,8 +216,8 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <Link href="/insights" className="block">
-            <div className="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10 active:bg-white/10 hover:bg-white/10 transition-all touch-manipulation min-h-[80px] sm:min-h-[auto]">
+          <Link href="/insights" className="block active:scale-[0.98] transition-transform touch-manipulation">
+            <div className="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10 hover:bg-white/10 active:bg-white/15 active:border-white/20 transition-all touch-manipulation min-h-[80px] sm:min-h-[auto]">
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="text-white/60 text-xs sm:text-sm mb-1">Insights</div>

@@ -29,7 +29,7 @@ const BottomNav = () => {
               <Link
                 key={item.path}
                 href={item.path}
-                className="flex-1 flex flex-col items-center justify-center relative min-h-[44px] touch-manipulation active:opacity-70 transition-opacity"
+                className="flex-1 flex flex-col items-center justify-center relative min-h-[44px] touch-manipulation active:scale-95 transition-transform"
               >
                 {isActive && (
                   <motion.div
@@ -38,6 +38,9 @@ const BottomNav = () => {
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
+                <motion.div
+                  className="absolute inset-0 bg-white/10 rounded-t-2xl opacity-0 active:opacity-100 transition-opacity"
+                />
                 <motion.span
                   className="text-xl sm:text-2xl mb-0.5 sm:mb-1 relative z-10"
                   animate={{ scale: isActive ? 1.1 : 1 }}
