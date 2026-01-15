@@ -585,3 +585,4 @@ const ExerciseModal = ({
 export default WorkoutTracker;
 
 
+
