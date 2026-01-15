@@ -39,12 +39,16 @@ const BottomNav = () => {
                 onMouseUp={() => setPressedButton(null)}
                 onMouseLeave={() => setPressedButton(null)}
               >
-                {(isActive || isPressed) && (
+                {/* Press highlight - shows when button is being pressed */}
+                {isPressed && !isActive && (
+                  <div className="absolute inset-0 bg-[rgb(38,38,38)] rounded-t-2xl" />
+                )}
+                {/* Active highlight - always shows for current route */}
+                {isActive && (
                   <motion.div
-                    layoutId={isActive ? "activeTab" : undefined}
+                    layoutId="activeTab"
                     className="absolute inset-0 bg-[rgb(38,38,38)] rounded-t-2xl"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    initial={false}
                   />
                 )}
                 <motion.span
