@@ -5,9 +5,6 @@ export type DeficitEntry = {
     fat: number;
     carbs: number;
     protein: number;
-    fiber: number;
-    sodium: number;
-    calcium: number;
   };
   fitness?: {
     totalCalories: number;
