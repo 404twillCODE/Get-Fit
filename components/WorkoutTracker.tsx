@@ -54,7 +54,8 @@ const WorkoutTracker = () => {
 
   const loadDayWorkouts = async () => {
     const data = await loadAppData();
-    setWorkouts(data.savedWorkouts[currentDayIndex] || []);
+    const dayWorkouts = data.savedWorkouts[currentDayIndex] || [];
+    setWorkouts(dayWorkouts as Exercise[]);
   };
 
   const saveDayWorkouts = async (nextWorkouts: Exercise[]) => {
