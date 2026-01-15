@@ -34,12 +34,12 @@ const BottomNav = () => {
                 {isActive && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute inset-0 bg-white/5 rounded-t-2xl"
+                    className="absolute inset-0 bg-[rgb(38,38,38)] rounded-t-2xl"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
                 <motion.div
-                  className="absolute inset-0 bg-white/10 rounded-t-2xl opacity-0 active:opacity-100 transition-opacity"
+                  className="absolute inset-0 bg-[rgb(38,38,38)] rounded-t-2xl opacity-0 active:opacity-100 transition-opacity duration-150"
                 />
                 <motion.span
                   className="text-xl sm:text-2xl mb-0.5 sm:mb-1 relative z-10"
