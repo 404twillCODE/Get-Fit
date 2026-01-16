@@ -13,7 +13,8 @@ type AuthContextValue = {
   showProfileSetup: boolean;
   signIn: (email: string, password: string) => Promise<string | null>;
   signUp: (email: string, password: string) => Promise<string | null>;
-  signInWithMagicLink: (email: string) => Promise<string | null>;
+  signInWithOTP: (email: string) => Promise<string | null>;
+  verifyOTP: (email: string, token: string) => Promise<string | null>;
   resetPassword: (email: string) => Promise<string | null>;
   updateEmail: (newEmail: string) => Promise<string | null>;
   updatePassword: (newPassword: string) => Promise<string | null>;
@@ -164,7 +165,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return error ? error.message : null;
   };
 
-  const signInWithMagicLink = async (email: string) => {
+  const signInWithOTP = async (email: string) => {
     if (!isSupabaseConfigured) {
       return "Supabase is not configured.";
     }
@@ -173,8 +174,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+        shouldCreateUser: true,
       },
+    });
+    return error ? error.message : null;
+  };
+
+  const verifyOTP = async (email: string, token: string) => {
+    if (!isSupabaseConfigured) {
+      return "Supabase is not configured.";
+    }
+    const supabase = getSupabaseClient();
+    if (!supabase) return "Supabase is not configured.";
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: "email",
     });
     return error ? error.message : null;
   };
@@ -257,7 +272,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       showProfileSetup,
       signIn,
       signUp,
-      signInWithMagicLink,
+      signInWithOTP,
+      verifyOTP,
       resetPassword,
       updateEmail,
       updatePassword,

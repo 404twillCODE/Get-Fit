@@ -6,11 +6,13 @@ import { useAuth } from "@/components/AuthProvider";
 import { isSupabaseConfigured } from "@/lib/supabaseClient";
 
 const AuthScreen = () => {
-  const { signIn, signUp, signInWithMagicLink, resetPassword, continueAsGuest } = useAuth();
-  const [mode, setMode] = useState<"signin" | "signup" | "magiclink" | "reset">("signin");
+  const { signIn, signUp, signInWithOTP, verifyOTP, resetPassword, continueAsGuest } = useAuth();
+  const [mode, setMode] = useState<"signin" | "signup" | "otp" | "reset">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
   const [status, setStatus] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -37,10 +39,25 @@ const AuthScreen = () => {
     setIsLoading(true);
     let errorMessage: string | null = null;
     
-    if (mode === "magiclink") {
-      errorMessage = await signInWithMagicLink(email);
-      if (!errorMessage) {
-        setStatus("Check your email for the magic link!");
+    if (mode === "otp") {
+      if (!otpSent) {
+        // Send OTP
+        errorMessage = await signInWithOTP(email);
+        if (!errorMessage) {
+          setStatus("Check your email for the one-time password!");
+          setOtpSent(true);
+        }
+      } else {
+        // Verify OTP
+        if (!otpCode) {
+          setStatus("Please enter the code from your email.");
+          setIsLoading(false);
+          return;
+        }
+        errorMessage = await verifyOTP(email, otpCode);
+        if (!errorMessage) {
+          setStatus("Successfully signed in!");
+        }
       }
     } else if (mode === "reset") {
       errorMessage = await resetPassword(email);
@@ -95,6 +112,8 @@ const AuthScreen = () => {
             onClick={() => {
               setMode("signin");
               setStatus("");
+              setOtpSent(false);
+              setOtpCode("");
             }}
             className={`flex-1 py-2 rounded-xl text-sm border ${
               mode === "signin"
@@ -108,6 +127,8 @@ const AuthScreen = () => {
             onClick={() => {
               setMode("signup");
               setStatus("");
+              setOtpSent(false);
+              setOtpCode("");
             }}
             className={`flex-1 py-2 rounded-xl text-sm border ${
               mode === "signup"
@@ -127,7 +148,17 @@ const AuthScreen = () => {
             onChange={(event) => setEmail(event.target.value)}
             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm"
           />
-          {mode !== "magiclink" && mode !== "reset" && (
+          {mode === "otp" && otpSent && (
+            <input
+              type="text"
+              placeholder="Enter 6-digit code"
+              value={otpCode}
+              onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm text-center text-2xl tracking-widest"
+              maxLength={6}
+            />
+          )}
+          {mode !== "otp" && mode !== "reset" && (
             <input
               type="password"
               placeholder="Password"
@@ -162,8 +193,10 @@ const AuthScreen = () => {
               ? "Sign In"
               : mode === "signup"
                 ? "Create Account"
-                : mode === "magiclink"
-                  ? "Send Magic Link"
+                : mode === "otp"
+                  ? otpSent
+                    ? "Verify Code"
+                    : "Send Code"
                   : "Send Reset Link"}
         </motion.button>
 
@@ -172,12 +205,14 @@ const AuthScreen = () => {
             <>
               <button
                 onClick={() => {
-                  setMode("magiclink");
+                  setMode("otp");
                   setStatus("");
+                  setOtpSent(false);
+                  setOtpCode("");
                 }}
                 className="w-full text-sm text-white/70 hover:text-white"
               >
-                Sign in with magic link
+                Sign in with one-time password
               </button>
               <button
                 onClick={() => {
@@ -190,16 +225,32 @@ const AuthScreen = () => {
               </button>
             </>
           )}
-          {mode === "magiclink" && (
-            <button
-              onClick={() => {
-                setMode("signin");
-                setStatus("");
-              }}
-              className="w-full text-sm text-white/70 hover:text-white"
-            >
-              Back to password sign in
-            </button>
+          {mode === "otp" && (
+            <>
+              {otpSent && (
+                <button
+                  onClick={() => {
+                    setOtpSent(false);
+                    setOtpCode("");
+                    setStatus("");
+                  }}
+                  className="w-full text-sm text-white/70 hover:text-white"
+                >
+                  Resend code
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setMode("signin");
+                  setStatus("");
+                  setOtpSent(false);
+                  setOtpCode("");
+                }}
+                className="w-full text-sm text-white/70 hover:text-white"
+              >
+                Back to password sign in
+              </button>
+            </>
           )}
           {mode === "reset" && (
             <button
