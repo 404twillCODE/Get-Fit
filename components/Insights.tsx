@@ -459,9 +459,11 @@ const Insights = () => {
           <button
             onClick={() => {
               // Reset to today's date when opening modal
-              const todayKey = new Date().toISOString().split("T")[0];
+              const today = new Date();
+              const todayKey = today.toISOString().split("T")[0];
               setSelectedDates(new Set([todayKey]));
               setLastClickedDate(todayKey);
+              setCurrentMonth(today); // Ensure current month shows today
               setShowCopyModal(true);
             }}
             className="w-full py-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors text-sm mb-3"
