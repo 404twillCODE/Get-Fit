@@ -11,13 +11,14 @@ import {
 } from "@/lib/storage";
 import {
   loadAppData,
-  resetToDefaults,
+  updateAppData,
 } from "@/lib/dataStore";
 
 const Insights = () => {
   const [entries, setEntries] = useState<DeficitEntry[]>([]);
   const [history, setHistory] = useState<WorkoutHistoryEntry[]>([]);
   const [schedule, setSchedule] = useState<string[]>([]);
+  const [savedWorkouts, setSavedWorkouts] = useState<unknown[][]>([]);
   const [syncStatus, setSyncStatus] = useState("");
   const { user, isGuest, signOut } = useAuth();
   const [showCopyModal, setShowCopyModal] = useState(false);
@@ -35,12 +36,20 @@ const Insights = () => {
     includeWorkouts: true,
     includeSummary: true,
   });
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteOptions, setDeleteOptions] = useState({
+    deleteDeficitEntries: false,
+    deleteWorkouts: false,
+    deleteWorkoutHistory: false,
+    deleteWorkoutSchedule: false,
+  });
 
   const loadData = async () => {
     const data = await loadAppData();
     setEntries(data.deficitEntries);
     setHistory(data.workoutHistory);
     setSchedule(data.workoutSchedule);
+    setSavedWorkouts(data.savedWorkouts);
   };
 
   useEffect(() => {
@@ -134,13 +143,35 @@ const Insights = () => {
     };
   }, [entries, history, schedule]);
 
-  const handleClearAll = async () => {
-    const confirmation = prompt(
-      "Type CLEAR to delete all local Get Fit data."
-    );
-    if (confirmation !== "CLEAR") return;
-    await resetToDefaults();
+  const handleDeleteData = async () => {
+    const data = await loadAppData();
+    const updatedData = { ...data };
+
+    if (deleteOptions.deleteDeficitEntries) {
+      updatedData.deficitEntries = [];
+    }
+    if (deleteOptions.deleteWorkouts) {
+      updatedData.savedWorkouts = Array.from({ length: 7 }, () => []);
+    }
+    if (deleteOptions.deleteWorkoutHistory) {
+      updatedData.workoutHistory = [];
+    }
+    if (deleteOptions.deleteWorkoutSchedule) {
+      updatedData.workoutSchedule = Array(7).fill("Rest Day");
+    }
+
+    // Save updated data
+    await updateAppData(() => updatedData);
     await loadData();
+    setShowDeleteModal(false);
+    setDeleteOptions({
+      deleteDeficitEntries: false,
+      deleteWorkouts: false,
+      deleteWorkoutHistory: false,
+      deleteWorkoutSchedule: false,
+    });
+    setSyncStatus("Data deleted successfully!");
+    setTimeout(() => setSyncStatus(""), 3000);
   };
 
   const toggleDateSelection = (dateKey: string) => {
@@ -484,10 +515,10 @@ const Insights = () => {
           </button>
           <div className="mt-3">
             <button
-              onClick={handleClearAll}
+              onClick={() => setShowDeleteModal(true)}
               className="w-full py-3 bg-red-500/10 border border-red-500/30 rounded-xl hover:bg-red-500/20 transition-colors text-sm text-red-200"
             >
-              Clear All Local Data
+              🗑️ Delete Data
             </button>
           </div>
 
@@ -733,6 +764,150 @@ const Insights = () => {
                     className="flex-1 py-3 bg-white text-[#0a0a0a] rounded-xl font-semibold hover:bg-white/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     Copy {selectedDates.size > 0 && `(${selectedDates.size})`}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Data Modal */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowDeleteModal(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            />
+            
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              onClick={() => setShowDeleteModal(false)}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="bg-[#0a0a0a] rounded-3xl p-6 lg:p-8 border border-white/20 max-w-md sm:max-w-lg w-full shadow-2xl max-h-[80vh] overflow-y-auto -mt-8"
+              >
+                <div className="text-center mb-6">
+                  <div className="text-2xl mb-2">🗑️</div>
+                  <h3 className="text-xl font-bold mb-2">Delete Data</h3>
+                  <p className="text-white/60 text-sm">
+                    Select what data you want to delete
+                  </p>
+                </div>
+                
+                <div className="space-y-3 mb-6">
+                  {entries.length > 0 && (
+                    <label className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+                      <div>
+                        <span className="text-sm font-medium">Deficit Entries</span>
+                        <div className="text-xs text-white/50 mt-1">
+                          {entries.length} day{entries.length !== 1 ? "s" : ""} of nutrition & fitness data
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={deleteOptions.deleteDeficitEntries}
+                        onChange={(e) => setDeleteOptions({ ...deleteOptions, deleteDeficitEntries: e.target.checked })}
+                        className="w-5 h-5 rounded"
+                      />
+                    </label>
+                  )}
+                  
+                  {history.length > 0 && (
+                    <label className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+                      <div>
+                        <span className="text-sm font-medium">Workout History</span>
+                        <div className="text-xs text-white/50 mt-1">
+                          {history.length} completed workout{history.length !== 1 ? "s" : ""}
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={deleteOptions.deleteWorkoutHistory}
+                        onChange={(e) => setDeleteOptions({ ...deleteOptions, deleteWorkoutHistory: e.target.checked })}
+                        className="w-5 h-5 rounded"
+                      />
+                    </label>
+                  )}
+                  
+                  {schedule.some(day => day !== "Rest Day") && (
+                    <label className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+                      <div>
+                        <span className="text-sm font-medium">Workout Schedule</span>
+                        <div className="text-xs text-white/50 mt-1">
+                          Weekly workout plan
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={deleteOptions.deleteWorkoutSchedule}
+                        onChange={(e) => setDeleteOptions({ ...deleteOptions, deleteWorkoutSchedule: e.target.checked })}
+                        className="w-5 h-5 rounded"
+                      />
+                    </label>
+                  )}
+                  
+                  {savedWorkouts.some((day: unknown[]) => Array.isArray(day) && day.length > 0) && (
+                    <label className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+                      <div>
+                        <span className="text-sm font-medium">Saved Workouts</span>
+                        <div className="text-xs text-white/50 mt-1">
+                          Planned workouts by day
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={deleteOptions.deleteWorkouts}
+                        onChange={(e) => setDeleteOptions({ ...deleteOptions, deleteWorkouts: e.target.checked })}
+                        className="w-5 h-5 rounded"
+                      />
+                    </label>
+                  )}
+                  
+                  {entries.length === 0 && history.length === 0 && 
+                   !schedule.some(day => day !== "Rest Day") && (
+                    <div className="text-center py-4 text-white/40 text-sm">
+                      No data to delete
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowDeleteModal(false);
+                      setDeleteOptions({
+                        deleteDeficitEntries: false,
+                        deleteWorkouts: false,
+                        deleteWorkoutHistory: false,
+                        deleteWorkoutSchedule: false,
+                      });
+                    }}
+                    className="flex-1 py-3 bg-white/5 border border-white/10 rounded-xl font-medium hover:bg-white/10 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteData}
+                    disabled={
+                      !deleteOptions.deleteDeficitEntries &&
+                      !deleteOptions.deleteWorkouts &&
+                      !deleteOptions.deleteWorkoutHistory &&
+                      !deleteOptions.deleteWorkoutSchedule
+                    }
+                    className="flex-1 py-3 bg-red-500/20 border border-red-500/30 text-red-200 rounded-xl font-semibold hover:bg-red-500/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    Delete Selected
                   </button>
                 </div>
               </div>
