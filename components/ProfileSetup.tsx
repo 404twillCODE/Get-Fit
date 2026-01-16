@@ -26,6 +26,7 @@ const ProfileSetup = ({
   const [profile, setProfile] = useState<UserProfile>(initialProfile || {});
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
   // Convert height from inches to feet/inches for display
   const heightInInches = profile.height || 0;
@@ -39,8 +40,14 @@ const ProfileSetup = ({
   };
 
   const handleSave = async () => {
+    // Prevent multiple simultaneous saves
+    if (isSaving) {
+      return;
+    }
+    
     setIsSaving(true);
     setError("");
+    setSuccess(false);
     
     try {
       if (user) {
@@ -52,27 +59,76 @@ const ProfileSetup = ({
           return;
         }
 
-        const { error: updateError } = await supabase.auth.updateUser({
+        console.log("Saving profile to Supabase:", profile);
+        
+        // Make the update request with error handling
+        const updateResult = await supabase.auth.updateUser({
           data: {
             profile: profile,
             profileSetupComplete: true,
           },
         });
 
+        const { data, error: updateError } = updateResult;
+
+        console.log("Update result:", { data, error: updateError });
+
         if (updateError) {
-          setError(updateError.message);
-          setIsSaving(false);
-          return;
+          console.error("Supabase update error:", updateError);
+          // If it's an abort error, try once more
+          if (updateError.message?.toLowerCase().includes("abort") || updateError.name === "AbortError") {
+            console.log("Abort error detected, retrying once...");
+            await new Promise(resolve => setTimeout(resolve, 500)); // Small delay before retry
+            
+            const retryResult = await supabase.auth.updateUser({
+              data: {
+                profile: profile,
+                profileSetupComplete: true,
+              },
+            });
+            
+            if (retryResult.error) {
+              setError("Connection issue. Please try again.");
+              setIsSaving(false);
+              return;
+            }
+            // Retry succeeded, continue to success
+          } else {
+            setError(updateError.message || "Failed to save profile.");
+            setIsSaving(false);
+            return;
+          }
         }
+        
+        console.log("Profile saved successfully");
+        // Success - show success message briefly, then close
+        setSuccess(true);
+        setIsSaving(false);
+        setTimeout(() => {
+          onComplete();
+        }, 1000);
       } else {
         // Save to localStorage for guest users
-        localStorage.setItem("guestProfile", JSON.stringify(profile));
-        localStorage.setItem("guestProfileSetupComplete", "true");
+        try {
+          console.log("Saving profile to localStorage:", profile);
+          localStorage.setItem("guestProfile", JSON.stringify(profile));
+          localStorage.setItem("guestProfileSetupComplete", "true");
+          console.log("Profile saved to localStorage successfully");
+          setSuccess(true);
+          setIsSaving(false);
+          setTimeout(() => {
+            onComplete();
+          }, 1000);
+        } catch (storageError) {
+          console.error("localStorage error:", storageError);
+          setError("Failed to save profile to local storage.");
+          setIsSaving(false);
+        }
       }
-
-      onComplete();
     } catch (err) {
-      setError("Failed to save profile. Please try again.");
+      console.error("Error saving profile:", err);
+      const errorMessage = err instanceof Error ? err.message : "Failed to save profile. Please try again.";
+      setError(errorMessage);
       setIsSaving(false);
     }
   };
@@ -236,6 +292,10 @@ const ProfileSetup = ({
 
         {error && (
           <div className="mb-3 text-xs text-red-400">{error}</div>
+        )}
+        
+        {success && (
+          <div className="mb-3 text-xs text-green-400">✓ Profile saved successfully!</div>
         )}
 
         <div className="flex gap-2">

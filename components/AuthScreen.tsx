@@ -75,7 +75,7 @@ const AuthScreen = () => {
     } else if (mode === "signup") {
       errorMessage = await signUp(email, password);
       if (!errorMessage) {
-        setStatus("Account created. You can now sign in.");
+        setStatus("Your account was created. Check your email for confirmation.");
         setMode("signin");
         setPassword("");
         setConfirmPassword("");
