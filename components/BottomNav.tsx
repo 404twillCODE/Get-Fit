@@ -16,73 +16,49 @@ const BottomNav = () => {
     { name: "Insights", path: "/insights", icon: "📈" },
   ];
 
-  // Normalize pathname to handle basePath and trailing slashes
-  const normalizedPathname = pathname?.replace(/\/$/, '') || '/';
-  
-  // Find active index for smooth highlight animation
-  const activeIndex = navItems.findIndex((item) => {
-    const normalizedItemPath = item.path === '/' ? '/' : item.path.replace(/\/$/, '');
-    return normalizedPathname === normalizedItemPath || 
-           (normalizedPathname === '' && normalizedItemPath === '/');
-  });
-
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[#0a0a0a] border-t border-white/10">
-      <div className="max-w-md mx-auto px-1 sm:px-2 relative">
-        {/* Animated highlight background - moves smoothly between tabs */}
-        {activeIndex >= 0 && (
-          <motion.div
-            className="absolute top-0 h-full bg-white/10 rounded-t-2xl pointer-events-none"
-            initial={false}
-            animate={{
-              x: `${(100 / navItems.length) * activeIndex}%`,
-              width: `${100 / navItems.length}%`,
-            }}
-            transition={{
-              type: "spring",
-              stiffness: 400,
-              damping: 35,
-            }}
-            style={{
-              left: 0,
-            }}
-          />
-        )}
-        
-        <div className="flex items-center justify-around h-16 sm:h-16 relative">
-          {navItems.map((item, index) => {
-            const normalizedItemPath = item.path === '/' ? '/' : item.path.replace(/\/$/, '');
-            const isActive = normalizedPathname === normalizedItemPath || 
-                           (normalizedPathname === '' && normalizedItemPath === '/');
+    <motion.nav
+      initial={{ y: 100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="fixed bottom-0 left-0 right-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-xl border-t border-white/10"
+    >
+      <div className="max-w-md mx-auto px-2 sm:px-4">
+        <div className="flex items-center justify-around h-16 sm:h-16">
+          {navItems.map((item) => {
+            const isActive = pathname === item.path;
             const isPressed = pressedButton === item.path;
-            
             return (
               <Link
                 key={item.path}
                 href={item.path}
-                className="flex-1 flex flex-col items-center justify-center relative min-h-[44px] touch-manipulation cursor-pointer z-10"
+                className="flex-1 flex flex-col items-center justify-center relative min-h-[44px] touch-manipulation cursor-pointer"
                 onTouchStart={() => setPressedButton(item.path)}
                 onTouchEnd={() => setPressedButton(null)}
                 onMouseDown={() => setPressedButton(item.path)}
                 onMouseUp={() => setPressedButton(null)}
                 onMouseLeave={() => setPressedButton(null)}
               >
-                {/* Press highlight - shows when button is being pressed */}
-                {isPressed && (
-                  <div className="absolute inset-0 bg-white/5 rounded-t-2xl pointer-events-none" />
+                {isActive && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="absolute inset-0 bg-white/5 rounded-t-2xl pointer-events-none"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+                {isPressed && !isActive && (
+                  <div className="absolute inset-0 bg-white/10 rounded-t-2xl opacity-100 pointer-events-none" />
                 )}
                 <motion.span
-                  className="text-2xl sm:text-2xl mb-1 relative z-10 pointer-events-none"
-                  animate={{ 
-                    scale: isActive ? 1.1 : 1,
-                  }}
-                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  className="text-xl sm:text-2xl mb-0.5 sm:mb-1 relative z-10 pointer-events-none"
+                  animate={{ scale: isActive ? 1.1 : 1 }}
+                  transition={{ duration: 0.2 }}
                 >
                   {item.icon}
                 </motion.span>
                 <span
                   className={`text-[10px] sm:text-xs font-medium relative z-10 transition-colors pointer-events-none ${
-                    isActive ? "text-white" : "text-white/40"
+                    isActive ? "text-white" : "text-white/50"
                   }`}
                 >
                   {item.name}
@@ -92,7 +68,7 @@ const BottomNav = () => {
           })}
         </div>
       </div>
-    </nav>
+    </motion.nav>
   );
 };
 
