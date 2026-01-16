@@ -349,7 +349,7 @@ const Insights = () => {
               <span className="text-white/50">Total Deficit</span>
               <span
                 className={`font-semibold ${
-                  stats.totalDeficit < 0 ? "text-green-400" : "text-red-400"
+                  stats.totalDeficit <= 0 ? "text-green-400" : "text-red-400"
                 }`}
               >
                 {stats.totalDeficit >= 0 ? "+" : ""}
@@ -468,7 +468,7 @@ const Insights = () => {
             >
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#0a0a0a] rounded-3xl p-6 border border-white/20 max-w-sm w-full shadow-2xl max-h-[90vh] overflow-y-auto"
+                className="bg-[#0a0a0a] rounded-3xl p-6 lg:p-8 border border-white/20 max-w-md sm:max-w-lg lg:max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto"
               >
                 <div className="text-center mb-6">
                   <div className="text-2xl mb-2">📋</div>
