@@ -28,31 +28,35 @@ const ProfileSetup = ({
   const [error, setError] = useState("");
 
   const handleSave = async () => {
-    if (!user) return;
-    
     setIsSaving(true);
     setError("");
     
     try {
-      const supabase = getSupabaseClient();
-      if (!supabase) {
-        setError("Unable to save profile.");
-        setIsSaving(false);
-        return;
-      }
+      if (user) {
+        // Save to Supabase user metadata for authenticated users
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+          setError("Unable to save profile.");
+          setIsSaving(false);
+          return;
+        }
 
-      // Update user metadata with profile
-      const { error: updateError } = await supabase.auth.updateUser({
-        data: {
-          profile: profile,
-          profileSetupComplete: true,
-        },
-      });
+        const { error: updateError } = await supabase.auth.updateUser({
+          data: {
+            profile: profile,
+            profileSetupComplete: true,
+          },
+        });
 
-      if (updateError) {
-        setError(updateError.message);
-        setIsSaving(false);
-        return;
+        if (updateError) {
+          setError(updateError.message);
+          setIsSaving(false);
+          return;
+        }
+      } else {
+        // Save to localStorage for guest users
+        localStorage.setItem("guestProfile", JSON.stringify(profile));
+        localStorage.setItem("guestProfileSetupComplete", "true");
       }
 
       onComplete();

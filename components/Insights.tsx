@@ -69,13 +69,25 @@ const Insights = () => {
   }, []);
 
   const loadUserProfile = async () => {
-    if (!user) return;
-    const supabase = getSupabaseClient();
-    if (!supabase) return;
-    
-    const profile = user.user_metadata?.profile as UserProfile | undefined;
-    if (profile) {
-      setUserProfile(profile);
+    if (user) {
+      // Load from Supabase user metadata for authenticated users
+      const supabase = getSupabaseClient();
+      if (!supabase) return;
+      
+      const profile = user.user_metadata?.profile as UserProfile | undefined;
+      if (profile) {
+        setUserProfile(profile);
+      }
+    } else if (isGuest) {
+      // Load from localStorage for guest users
+      const guestProfile = localStorage.getItem("guestProfile");
+      if (guestProfile) {
+        try {
+          setUserProfile(JSON.parse(guestProfile));
+        } catch (err) {
+          console.error("Error parsing guest profile:", err);
+        }
+      }
     }
   };
 

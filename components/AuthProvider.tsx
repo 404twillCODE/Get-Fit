@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { ensureUserData, startPeriodicSync, retryFailedSyncs } from "@/lib/dataStore";
+import { getLocalData } from "@/lib/storage";
 
 type AuthContextValue = {
   session: Session | null;
@@ -43,7 +44,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         if (typeof window !== "undefined") {
           const guestStored = localStorage.getItem(GUEST_MODE_KEY);
-          setIsGuest(guestStored === "true");
+          const isGuestMode = guestStored === "true";
+          setIsGuest(isGuestMode);
+          
+          // Check if guest mode has no data and needs profile setup
+          if (isGuestMode) {
+            const localData = getLocalData();
+            const hasNoData = 
+              localData.deficitEntries.length === 0 &&
+              localData.workoutHistory.length === 0 &&
+              !localData.savedWorkouts.some((day: unknown[]) => Array.isArray(day) && day.length > 0) &&
+              localData.workoutSchedule.every(day => day === "Rest Day");
+            
+            const guestProfileComplete = localStorage.getItem("guestProfileSetupComplete") === "true";
+            
+            if (hasNoData && !guestProfileComplete) {
+              setShowProfileSetup(true);
+            }
+          }
         }
 
         if (!isSupabaseConfigured) {
