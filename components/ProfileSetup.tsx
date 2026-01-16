@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
+import { motion } from "framer-motion";
 import { useAuth } from "@/components/AuthProvider";
 import { getSupabaseClient } from "@/lib/supabaseClient";
-import { updateAppData, loadAppData } from "@/lib/dataStore";
 import { type UserProfile } from "@/lib/storage";
 
 // Re-export for backward compatibility
@@ -44,71 +43,87 @@ const ProfileSetup = ({
     setError("");
     setSuccess(false);
     
+    // Add timeout to prevent hanging
+    const timeoutId = setTimeout(() => {
+      if (isSaving) {
+        console.warn("Profile save timeout - forcing completion");
+        setIsSaving(false);
+        setError("Save is taking longer than expected. Please try again.");
+      }
+    }, 15000); // 15 second timeout
+    
     try {
       if (user) {
-        // Save to user_data table via dataStore (uses existing SQL setup)
-        console.log("Saving profile to Supabase user_data table:", profile);
-        
-        try {
-          // Load current app data
-          const currentData = await loadAppData();
-          
-          // Update with profile data
-          const updatedData = {
-            ...currentData,
+        // Save to Supabase user metadata
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+          clearTimeout(timeoutId);
+          setError("Unable to save profile. Supabase not configured.");
+          setIsSaving(false);
+          return;
+        }
+
+        // Save directly to user metadata with timeout protection
+        const updatePromise = supabase.auth.updateUser({
+          data: {
             profile: profile,
             profileSetupComplete: true,
-          };
-          
-          // Save to Supabase user_data table
-          // updateAppData returns the updated AppData, not a boolean
-          await updateAppData(() => updatedData);
-          
-          // Also try to save to user_metadata as a backup (non-blocking)
-          const supabase = getSupabaseClient();
-          if (supabase) {
-            supabase.auth.updateUser({
-              data: {
-                profile: profile,
-                profileSetupComplete: true,
-              },
-            }).catch((err) => {
-              console.warn("Failed to update user_metadata (non-critical):", err);
-              // This is just a backup, so we don't fail if it errors
-            });
-          }
-          
-          console.log("Profile saved successfully");
-          // Success - show success message briefly, then close
-          setSuccess(true);
+          },
+        });
+
+        const timeoutPromise = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error("Request timeout")), 10000)
+        );
+
+        const { data, error: updateError } = await Promise.race([
+          updatePromise,
+          timeoutPromise,
+        ]) as Awaited<ReturnType<typeof supabase.auth.updateUser>>;
+
+        clearTimeout(timeoutId);
+
+        if (updateError) {
+          console.error("Supabase update error:", updateError);
+          setError(updateError.message || "Failed to save profile. Please try again.");
           setIsSaving(false);
-          setTimeout(() => {
-            onComplete();
-          }, 1000);
-        } catch (err) {
-          console.error("Error saving profile to dataStore:", err);
-          setError("Failed to save profile. Please try again.");
-          setIsSaving(false);
+          return;
         }
+
+        // Success - refresh session in background (non-blocking)
+        supabase.auth.getSession().catch(err => {
+          console.warn("Session refresh failed (non-critical):", err);
+        });
+        
+        // Show success and close immediately
+        setSuccess(true);
+        setIsSaving(false);
+        
+        // Use requestAnimationFrame to ensure state updates are processed
+        requestAnimationFrame(() => {
+          onComplete();
+        });
       } else {
         // Save to localStorage for guest users
         try {
-          console.log("Saving profile to localStorage:", profile);
           localStorage.setItem("guestProfile", JSON.stringify(profile));
           localStorage.setItem("guestProfileSetupComplete", "true");
-          console.log("Profile saved to localStorage successfully");
+          clearTimeout(timeoutId);
           setSuccess(true);
           setIsSaving(false);
+          
+          // Close after brief success display
           setTimeout(() => {
             onComplete();
-          }, 1000);
+          }, 500);
         } catch (storageError) {
+          clearTimeout(timeoutId);
           console.error("localStorage error:", storageError);
           setError("Failed to save profile to local storage.");
           setIsSaving(false);
         }
       }
     } catch (err) {
+      clearTimeout(timeoutId);
       console.error("Error saving profile:", err);
       const errorMessage = err instanceof Error ? err.message : "Failed to save profile. Please try again.";
       setError(errorMessage);

@@ -181,62 +181,76 @@ const WorkoutTracker = () => {
 
   const addExercise = async (exercise: Exercise) => {
     try {
-      if (editingExercise) {
-        // Update existing exercise - remove from all days first, then add to new days
-        await updateAppData((current) => {
-          const savedWorkouts: Exercise[][] = Array.from({ length: 7 }, () => []);
-          
-          // First, remove the exercise from all days
-          for (let day = 0; day < 7; day++) {
-            const dayWorkouts = (current.savedWorkouts[day] || []) as any[];
-            savedWorkouts[day] = dayWorkouts.filter((e) => {
-              // Handle both old and new format
-              const eId = e.id;
-              return eId !== editingExercise.id;
-            }) as Exercise[];
-          }
-          
-          // Then add the updated exercise to the appropriate days
-          if (!exercise.selectedDays || exercise.selectedDays.length === 0) {
-            // Add to all days if no selection
-            for (let i = 0; i < 7; i++) {
-              savedWorkouts[i] = [...savedWorkouts[i], exercise];
+      // Add timeout protection
+      const savePromise = (async () => {
+        if (editingExercise) {
+          // Update existing exercise - remove from all days first, then add to new days
+          await updateAppData((current) => {
+            const savedWorkouts: Exercise[][] = Array.from({ length: 7 }, () => []);
+            
+            // First, remove the exercise from all days
+            for (let day = 0; day < 7; day++) {
+              const dayWorkouts = (current.savedWorkouts[day] || []) as any[];
+              savedWorkouts[day] = dayWorkouts.filter((e) => {
+                // Handle both old and new format
+                const eId = e.id;
+                return eId !== editingExercise.id;
+              }) as Exercise[];
             }
-          } else {
-            // Add to selected days only
-            exercise.selectedDays.forEach((day) => {
-              savedWorkouts[day] = [...savedWorkouts[day], exercise];
-            });
-          }
-          
-          return { ...current, savedWorkouts };
-        });
-        setEditingExercise(null);
-      } else {
-        // Add new exercise - add it to the appropriate days
-        await updateAppData((current) => {
-          const savedWorkouts = [...current.savedWorkouts];
-          
-          if (!exercise.selectedDays || exercise.selectedDays.length === 0) {
-            // Add to all days if no selection
-            for (let i = 0; i < 7; i++) {
-              savedWorkouts[i] = [...(savedWorkouts[i] || []), exercise];
+            
+            // Then add the updated exercise to the appropriate days
+            if (!exercise.selectedDays || exercise.selectedDays.length === 0) {
+              // Add to all days if no selection
+              for (let i = 0; i < 7; i++) {
+                savedWorkouts[i] = [...savedWorkouts[i], exercise];
+              }
+            } else {
+              // Add to selected days only
+              exercise.selectedDays.forEach((day) => {
+                savedWorkouts[day] = [...savedWorkouts[day], exercise];
+              });
             }
-          } else {
-            // Add to selected days only
-            exercise.selectedDays.forEach((day) => {
-              savedWorkouts[day] = [...(savedWorkouts[day] || []), exercise];
-            });
-          }
-          
-          return { ...current, savedWorkouts };
-        });
-      }
-      await loadDayWorkouts(); // Reload to show updated list
+            
+            return { ...current, savedWorkouts };
+          });
+          setEditingExercise(null);
+        } else {
+          // Add new exercise - add it to the appropriate days
+          await updateAppData((current) => {
+            const savedWorkouts = [...current.savedWorkouts];
+            
+            if (!exercise.selectedDays || exercise.selectedDays.length === 0) {
+              // Add to all days if no selection
+              for (let i = 0; i < 7; i++) {
+                savedWorkouts[i] = [...(savedWorkouts[i] || []), exercise];
+              }
+            } else {
+              // Add to selected days only
+              exercise.selectedDays.forEach((day) => {
+                savedWorkouts[day] = [...(savedWorkouts[day] || []), exercise];
+              });
+            }
+            
+            return { ...current, savedWorkouts };
+          });
+        }
+        await loadDayWorkouts(); // Reload to show updated list
+      })();
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Save timeout")), 10000)
+      );
+
+      await Promise.race([savePromise, timeoutPromise]);
+      
       setShowModal(false);
     } catch (error) {
       console.error("Error saving exercise:", error);
-      alert("Failed to save exercise. Please try again.");
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      alert(errorMsg.includes("timeout") 
+        ? "Save is taking longer than expected. Please try again." 
+        : "Failed to save exercise. Please try again.");
+      throw error; // Re-throw so handleSave can catch it
     }
   };
 
@@ -439,24 +453,39 @@ const WorkoutTracker = () => {
 
       {/* Break Timer Display */}
       {activeBreakTimer && (
-        <div className="px-4 sm:px-6 lg:px-8 mb-4">
+        <AnimatePresence>
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-blue-500/20 border border-blue-500/30 rounded-2xl p-4 text-center"
+            key="break-timer-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 grid place-items-center bg-black/70 backdrop-blur-sm p-4"
           >
-            <div className="text-blue-400 text-sm mb-2">Break Time</div>
-            <div className="text-3xl font-bold text-white">
-              {formatTime(activeBreakTimer.timeLeft)}
-            </div>
-            <button
-              onClick={() => setActiveBreakTimer(null)}
-              className="mt-2 text-xs text-blue-400 hover:text-blue-300"
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: "spring", damping: 20, stiffness: 250 }}
+              className="w-full max-w-sm rounded-3xl border border-blue-500/30 bg-[#0a0a0a] p-6 text-center shadow-2xl"
             >
-              Dismiss
-            </button>
+              <div className="text-blue-400 text-xs uppercase tracking-[0.2em] mb-3">
+                Break Time
+              </div>
+              <div className="text-5xl font-bold text-white mb-2">
+                {formatTime(activeBreakTimer.timeLeft)}
+              </div>
+              <div className="text-white/60 text-sm mb-5">
+                Reset and get ready for your next set.
+              </div>
+              <button
+                onClick={() => setActiveBreakTimer(null)}
+                className="w-full py-3 bg-white text-[#0a0a0a] rounded-xl font-semibold hover:bg-white/90 transition-colors"
+              >
+                Dismiss
+              </button>
+            </motion.div>
           </motion.div>
-        </div>
+        </AnimatePresence>
       )}
 
       {/* Add Exercise Button */}
@@ -648,6 +677,7 @@ const ExerciseModal = ({
   const [breakTime, setBreakTime] = useState(60); // Default 60 seconds
   const [selectedDays, setSelectedDays] = useState<number[]>([currentDayIndex]);
   const [notes, setNotes] = useState("");
+  const [isSavingExercise, setIsSavingExercise] = useState(false);
 
   const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const categories = [
@@ -712,7 +742,11 @@ const ExerciseModal = ({
     );
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (isSavingExercise) {
+      return; // Prevent duplicate saves
+    }
+
     if (!name.trim()) {
       alert("Please enter an exercise name");
       return;
@@ -722,24 +756,41 @@ const ExerciseModal = ({
       return;
     }
 
-    const exercise: Exercise = {
-      id: editingExercise?.id || Date.now(),
-      name: name.trim(),
-      categories: selectedCategories.length > 0 ? selectedCategories : ["legs"],
-      notes: notes.trim() || undefined,
-      completed: false,
-      selectedDays: selectedDays.length > 0 ? selectedDays : undefined,
-      sets: Array.from({ length: sets }, (_, i) => ({
-        setNumber: i + 1,
-        reps,
-        weight: parseFloat(weight) || 0,
+    setIsSavingExercise(true);
+    
+    try {
+      const exercise: Exercise = {
+        id: editingExercise?.id || Date.now(),
+        name: name.trim(),
+        categories: selectedCategories.length > 0 ? selectedCategories : ["legs"],
+        notes: notes.trim() || undefined,
         completed: false,
-        breakTime: breakTime > 0 ? breakTime : undefined,
-      })),
-    };
+        selectedDays: selectedDays.length > 0 ? selectedDays : undefined,
+        sets: Array.from({ length: sets }, (_, i) => ({
+          setNumber: i + 1,
+          reps,
+          weight: parseFloat(weight) || 0,
+          completed: false,
+          breakTime: breakTime > 0 ? breakTime : undefined,
+        })),
+      };
 
-    onSave(exercise);
-    resetForm();
+      // Add timeout protection
+      const savePromise = Promise.resolve(onSave(exercise));
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Save timeout")), 10000)
+      );
+
+      await Promise.race([savePromise, timeoutPromise]);
+      
+      resetForm();
+      onClose(); // Close modal after successful save
+    } catch (error) {
+      console.error("Error saving exercise:", error);
+      alert("Failed to save exercise. Please try again.");
+    } finally {
+      setIsSavingExercise(false);
+    }
   };
 
   if (!show) return null;
@@ -759,26 +810,33 @@ const ExerciseModal = ({
           
           {/* Modal */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
             onClick={(e) => e.stopPropagation()}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm grid place-items-center p-4"
           >
-            <div className="w-full max-w-md lg:max-w-lg bg-[#0a0a0a] rounded-3xl border border-white/20 p-6 lg:p-8 max-h-[90vh] overflow-y-auto shadow-2xl">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold">
-                  {editingExercise ? "Edit Exercise" : "Add Exercise"}
-                </h2>
-                <button onClick={onClose} className="text-2xl">
+            <div className="bg-[#0a0a0a] rounded-3xl p-5 lg:p-6 border border-white/20 max-w-md w-full shadow-2xl max-h-[85vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-bold mb-1">
+                    {editingExercise ? "Edit Exercise" : "Add Exercise"}
+                  </h3>
+                  <p className="text-white/60 text-xs">
+                    {editingExercise ? "Update exercise details" : "Create a new exercise"}
+                  </p>
+                </div>
+                <button 
+                  onClick={onClose} 
+                  className="text-white/60 hover:text-white text-2xl leading-none"
+                >
                   ×
                 </button>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3 mb-4">
                 <div>
-                  <label className="text-white/60 text-sm mb-2 block">
+                  <label className="text-xs text-white/70 mb-1 block">
                     Exercise Name
                   </label>
                   <input
@@ -786,12 +844,12 @@ const ExerciseModal = ({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g., Bench Press"
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white"
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="text-white/60 text-sm mb-2 block">
+                  <label className="text-xs text-white/70 mb-1 block">
                     Categories (Select Multiple)
                   </label>
                   <div className="flex gap-2 flex-wrap">
@@ -800,10 +858,10 @@ const ExerciseModal = ({
                         key={cat.value}
                         type="button"
                         onClick={() => toggleCategory(cat.value as ExerciseCategory)}
-                        className={`px-3 py-2 rounded-lg text-sm transition-colors ${
+                        className={`px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
                           selectedCategories.includes(cat.value as ExerciseCategory)
-                            ? "bg-white text-[#0a0a0a]"
-                            : "bg-white/5 text-white/60 border border-white/10"
+                            ? "bg-white text-[#0a0a0a] font-medium"
+                            : "bg-white/5 text-white/70 border border-white/10 hover:bg-white/10"
                         }`}
                       >
                         {cat.label}
@@ -811,14 +869,14 @@ const ExerciseModal = ({
                     ))}
                   </div>
                   {selectedCategories.length === 0 && (
-                    <div className="text-xs text-yellow-400 mt-2">
+                    <div className="text-xs text-yellow-400 mt-1.5">
                       Please select at least one category
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className="text-white/60 text-sm mb-2 block">
+                  <label className="text-xs text-white/70 mb-1 block">
                     Select Days
                   </label>
                   <div className="flex gap-2 flex-wrap">
@@ -826,10 +884,10 @@ const ExerciseModal = ({
                       <button
                         key={day}
                         onClick={() => toggleDay(index)}
-                        className={`px-3 py-2 rounded-lg text-sm transition-colors ${
+                        className={`px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
                           selectedDays.includes(index)
-                            ? "bg-white text-[#0a0a0a]"
-                            : "bg-white/5 text-white/60 border border-white/10"
+                            ? "bg-white text-[#0a0a0a] font-medium"
+                            : "bg-white/5 text-white/70 border border-white/10 hover:bg-white/10"
                         }`}
                       >
                         {day.substring(0, 3)}
@@ -840,40 +898,40 @@ const ExerciseModal = ({
 
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="text-white/60 text-sm mb-2 block">Sets</label>
+                    <label className="text-xs text-white/70 mb-1 block">Sets</label>
                     <input
                       type="number"
                       value={sets}
                       onChange={(e) => setSets(parseInt(e.target.value) || 1)}
                       min="1"
-                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white"
+                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="text-white/60 text-sm mb-2 block">Reps</label>
+                    <label className="text-xs text-white/70 mb-1 block">Reps</label>
                     <input
                       type="number"
                       value={reps}
                       onChange={(e) => setReps(parseInt(e.target.value) || 1)}
                       min="1"
-                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white"
+                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="text-white/60 text-sm mb-2 block">Weight</label>
+                    <label className="text-xs text-white/70 mb-1 block">Weight (lbs)</label>
                     <input
                       type="number"
                       value={weight}
                       onChange={(e) => setWeight(e.target.value)}
                       placeholder="lbs"
                       step="2.5"
-                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white"
+                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-white/60 text-sm mb-2 block">
+                  <label className="text-xs text-white/70 mb-1 block">
                     Break Time (seconds)
                   </label>
                   <input
@@ -882,31 +940,38 @@ const ExerciseModal = ({
                     onChange={(e) => setBreakTime(parseInt(e.target.value) || 0)}
                     min="0"
                     placeholder="0 for no break"
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white"
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
                   />
-                  <div className="text-xs text-white/40 mt-1">
+                  <div className="text-xs text-white/50 mt-1">
                     Timer will start when you complete a set
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-white/60 text-sm mb-2 block">Notes</label>
+                  <label className="text-xs text-white/70 mb-1 block">Notes (optional)</label>
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Add any notes..."
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white min-h-[80px]"
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none min-h-[60px] resize-none"
                   />
                 </div>
+              </div>
 
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleSave}
-                  className="w-full py-4 bg-white text-[#0a0a0a] rounded-2xl font-semibold text-lg mt-6"
+              <div className="flex gap-2">
+                <button
+                  onClick={onClose}
+                  className="flex-1 py-2.5 bg-white/5 border border-white/10 rounded-lg font-medium hover:bg-white/10 transition-colors text-sm"
                 >
-                  {editingExercise ? "Update Exercise" : "Save Exercise"}
-                </motion.button>
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={isSavingExercise}
+                  className="flex-1 py-2.5 bg-white text-[#0a0a0a] rounded-lg font-semibold hover:bg-white/90 transition-colors disabled:opacity-60 text-sm"
+                >
+                  {isSavingExercise ? "Saving..." : editingExercise ? "Update" : "Save"}
+                </button>
               </div>
             </div>
           </motion.div>
@@ -941,6 +1006,7 @@ const WorkoutSetupModal = ({
   const [isSaving, setIsSaving] = useState(false);
   const [showExerciseModal, setShowExerciseModal] = useState(false);
   const [exerciseModalDayIndex, setExerciseModalDayIndex] = useState<number | null>(null);
+  const [setupExercises, setSetupExercises] = useState<Record<number, Exercise[]>>({});
 
   const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const workoutTypeOptions = [
@@ -965,8 +1031,31 @@ const WorkoutSetupModal = ({
       setSelectedDays([]);
       setWorkoutTypes({});
       setIsSaving(false);
+      setSetupExercises({});
     }
   }, [show]);
+
+  useEffect(() => {
+    if (!show || step !== 3 || selectedDays.length === 0) return;
+    let isMounted = true;
+    const loadSetupExercises = async () => {
+      try {
+        const data = await loadAppData();
+        if (!isMounted) return;
+        const next: Record<number, Exercise[]> = {};
+        selectedDays.forEach((day) => {
+          next[day] = (data.savedWorkouts[day] || []) as Exercise[];
+        });
+        setSetupExercises(next);
+      } catch (error) {
+        console.error("Error loading setup exercises:", error);
+      }
+    };
+    loadSetupExercises();
+    return () => {
+      isMounted = false;
+    };
+  }, [show, step, selectedDays]);
 
   const toggleDay = (dayIndex: number) => {
     setSelectedDays((prev) =>
@@ -1243,6 +1332,26 @@ const WorkoutSetupModal = ({
                         >
                           + Add Exercise
                         </button>
+                        {(setupExercises[dayIndex] || []).length > 0 && (
+                          <div className="mt-3 space-y-2">
+                            {(setupExercises[dayIndex] || []).map((exercise) => (
+                              <div
+                                key={`${exercise.id}-${dayIndex}`}
+                                className="flex items-center justify-between rounded-lg bg-white/5 border border-white/10 px-3 py-2"
+                              >
+                                <div className="min-w-0">
+                                  <div className="text-sm font-medium truncate">{exercise.name}</div>
+                                  <div className="text-xs text-white/60 truncate">
+                                    {(exercise.categories || []).join(", ")} • {exercise.sets?.length || 0} sets
+                                  </div>
+                                </div>
+                                <div className="text-xs text-white/50 ml-3">
+                                  {exercise.sets?.[0]?.reps ? `${exercise.sets[0].reps} reps` : ""}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1311,19 +1420,38 @@ const WorkoutSetupModal = ({
             setExerciseModalDayIndex(null);
           }}
           onSave={async (exercise) => {
-            // Save exercise to the specific day
-            const allData = await loadAppData();
-            const newSavedWorkouts = [...allData.savedWorkouts];
-            const dayWorkouts = (newSavedWorkouts[exerciseModalDayIndex!] || []) as Exercise[];
-            newSavedWorkouts[exerciseModalDayIndex!] = [...dayWorkouts, exercise];
-            
-            await updateAppData((current) => ({
-              ...current,
-              savedWorkouts: newSavedWorkouts,
-            }));
-            
-            setShowExerciseModal(false);
-            setExerciseModalDayIndex(null);
+            try {
+              // Save exercise to the specific day
+              const allData = await loadAppData();
+              const newSavedWorkouts = [...allData.savedWorkouts];
+              const dayWorkouts = (newSavedWorkouts[exerciseModalDayIndex!] || []) as Exercise[];
+              newSavedWorkouts[exerciseModalDayIndex!] = [...dayWorkouts, exercise];
+              
+              // Add timeout protection
+              const savePromise = updateAppData((current) => ({
+                ...current,
+                savedWorkouts: newSavedWorkouts,
+              }));
+
+              const timeoutPromise = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error("Save timeout")), 10000)
+              );
+
+              await Promise.race([savePromise, timeoutPromise]);
+              setSetupExercises((prev) => ({
+                ...prev,
+                [exerciseModalDayIndex!]: [
+                  ...(prev[exerciseModalDayIndex!] || []),
+                  exercise,
+                ],
+              }));
+
+              setShowExerciseModal(false);
+              setExerciseModalDayIndex(null);
+            } catch (error) {
+              console.error("Error saving exercise in setup:", error);
+              alert("Failed to save exercise. Please try again.");
+            }
           }}
         />
       )}
@@ -1351,6 +1479,7 @@ const SetupExerciseModal = ({
   const [weight, setWeight] = useState("");
   const [breakTime, setBreakTime] = useState(60);
   const [notes, setNotes] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const categories = [
@@ -1384,7 +1513,11 @@ const SetupExerciseModal = ({
     );
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (isSaving) {
+      return; // Prevent duplicate saves
+    }
+
     if (!name.trim()) {
       alert("Please enter an exercise name");
       return;
@@ -1397,191 +1530,200 @@ const SetupExerciseModal = ({
       return;
     }
 
-    const exercise: Exercise = {
-      id: Date.now(),
-      name: name.trim(),
-      categories: selectedCategories.length > 0 ? selectedCategories : ["legs"],
-      notes: notes.trim() || undefined,
-      completed: false,
-      selectedDays: [dayIndex],
-      sets: Array.from({ length: sets }, (_, i) => ({
-        setNumber: i + 1,
-        reps,
-        weight: parseFloat(weight) || 0,
-        completed: false,
-        breakTime,
-      })),
-    };
+    setIsSaving(true);
 
-    onSave(exercise);
+    try {
+      const exercise: Exercise = {
+        id: Date.now(),
+        name: name.trim(),
+        categories: selectedCategories.length > 0 ? selectedCategories : ["legs"],
+        notes: notes.trim() || undefined,
+        completed: false,
+        selectedDays: [dayIndex],
+        sets: Array.from({ length: sets }, (_, i) => ({
+          setNumber: i + 1,
+          reps,
+          weight: parseFloat(weight) || 0,
+          completed: false,
+          breakTime,
+        })),
+      };
+
+      // Add timeout protection
+      const savePromise = onSave(exercise);
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Save timeout")), 10000)
+      );
+
+      await Promise.race([savePromise, timeoutPromise]);
+      
+      onClose(); // Close modal after successful save
+    } catch (error) {
+      console.error("Error saving exercise:", error);
+      alert("Failed to save exercise. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!show || dayIndex === null) return null;
 
   return (
-    <motion.div
-      key={`setup-exercise-wrapper-${dayIndex}`}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[60]"
-    >
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-        className="fixed inset-0 bg-black/90 backdrop-blur-sm"
-      />
-      
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        onClick={(e) => e.stopPropagation()}
-        className="fixed inset-0 z-[60] flex items-center justify-center p-4"
-      >
-            <div className="w-full max-w-lg bg-[#0a0a0a] rounded-3xl border border-white/20 p-6 lg:p-8 max-h-[90vh] overflow-y-auto shadow-2xl">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold mb-1">Add Exercise</h2>
-                  <p className="text-sm text-white/60">
-                    {days[dayIndex]}
-                  </p>
-                </div>
-                <button
-                  onClick={onClose}
-                  className="text-white/60 hover:text-white transition-colors text-2xl"
-                >
-                  ×
-                </button>
-              </div>
+    <AnimatePresence>
+      {show && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 pointer-events-none"
+          >
+            <div className="bg-[#0a0a0a] rounded-3xl p-5 lg:p-6 border border-white/20 max-w-md w-full shadow-2xl max-h-[85vh] overflow-y-auto pointer-events-auto">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-bold mb-1">Add Exercise</h3>
+            <p className="text-white/60 text-xs">
+              {days[dayIndex]}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-white/60 hover:text-white text-2xl leading-none"
+          >
+            ×
+          </button>
+        </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="text-white/60 text-sm mb-2 block">
-                    Exercise Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g., Bench Press"
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white"
-                  />
-                </div>
+        <div className="space-y-3 mb-4">
+          <div>
+            <label className="text-xs text-white/70 mb-1 block">
+              Exercise Name *
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Bench Press"
+              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
+            />
+          </div>
 
-                <div>
-                  <label className="text-white/60 text-sm mb-2 block">
-                    Categories *
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {categories.map((cat) => {
-                      const isSelected = selectedCategories.includes(cat.value as ExerciseCategory);
-                      return (
-                        <button
-                          key={cat.value}
-                          onClick={() => toggleCategory(cat.value as ExerciseCategory)}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                            isSelected
-                              ? "bg-white text-[#0a0a0a]"
-                              : "bg-white/5 text-white/60 border border-white/10 hover:bg-white/10"
-                          }`}
-                        >
-                          {cat.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-white/60 text-sm mb-2 block">
-                      Sets
-                    </label>
-                    <input
-                      type="number"
-                      value={sets}
-                      onChange={(e) => setSets(parseInt(e.target.value) || 1)}
-                      min="1"
-                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-white/60 text-sm mb-2 block">
-                      Reps
-                    </label>
-                    <input
-                      type="number"
-                      value={reps}
-                      onChange={(e) => setReps(parseInt(e.target.value) || 1)}
-                      min="1"
-                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-white/60 text-sm mb-2 block">
-                      Weight (optional)
-                    </label>
-                    <input
-                      type="number"
-                      value={weight}
-                      onChange={(e) => setWeight(e.target.value)}
-                      placeholder="0"
-                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-white/60 text-sm mb-2 block">
-                      Break (seconds)
-                    </label>
-                    <input
-                      type="number"
-                      value={breakTime}
-                      onChange={(e) => setBreakTime(parseInt(e.target.value) || 0)}
-                      min="0"
-                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-white/60 text-sm mb-2 block">
-                    Notes (optional)
-                  </label>
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Add any notes..."
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white min-h-[80px]"
-                  />
-                </div>
-
-                <div className="flex gap-3 pt-4">
+          <div>
+            <label className="text-xs text-white/70 mb-1 block">
+              Categories *
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat) => {
+                const isSelected = selectedCategories.includes(cat.value as ExerciseCategory);
+                return (
                   <button
-                    onClick={onClose}
-                    className="flex-1 px-6 py-3 bg-white/5 border border-white/10 rounded-xl font-medium hover:bg-white/10 transition-colors"
+                    key={cat.value}
+                    onClick={() => toggleCategory(cat.value as ExerciseCategory)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
+                      isSelected
+                        ? "bg-white text-[#0a0a0a] font-medium"
+                        : "bg-white/5 text-white/70 border border-white/10 hover:bg-white/10"
+                    }`}
                   >
-                    Cancel
+                    {cat.label}
                   </button>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleSave}
-                    className="flex-1 py-3 bg-white text-[#0a0a0a] rounded-xl font-semibold"
-                  >
-                    Add Exercise
-                  </motion.button>
-                </div>
-              </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs text-white/70 mb-1 block">Sets</label>
+              <input
+                type="number"
+                value={sets}
+                onChange={(e) => setSets(parseInt(e.target.value) || 1)}
+                min="1"
+                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-white/70 mb-1 block">Reps</label>
+              <input
+                type="number"
+                value={reps}
+                onChange={(e) => setReps(parseInt(e.target.value) || 1)}
+                min="1"
+                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-white/70 mb-1 block">Weight (lbs)</label>
+              <input
+                type="number"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                placeholder="0"
+                step="2.5"
+                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs text-white/70 mb-1 block">
+              Break Time (seconds)
+            </label>
+            <input
+              type="number"
+              value={breakTime}
+              onChange={(e) => setBreakTime(parseInt(e.target.value) || 0)}
+              min="0"
+              placeholder="0 for no break"
+              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
+            />
+            <div className="text-xs text-white/50 mt-1">
+              Timer will start when you complete a set
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs text-white/70 mb-1 block">
+              Notes (optional)
+            </label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add any notes..."
+              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none min-h-[60px] resize-none"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 bg-white/5 border border-white/10 rounded-lg font-medium hover:bg-white/10 transition-colors text-sm"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex-1 py-2.5 bg-white text-[#0a0a0a] rounded-lg font-semibold hover:bg-white/90 transition-colors disabled:opacity-60 text-sm"
+          >
+            {isSaving ? "Saving..." : "Add Exercise"}
+          </button>
+        </div>
             </div>
           </motion.div>
-    </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 };
 

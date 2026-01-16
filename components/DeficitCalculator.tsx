@@ -128,10 +128,17 @@ const DeficitCalculator = () => {
       updatedEntries.push(newEntry);
       updatedEntries.sort((a, b) => b.date.localeCompare(a.date));
 
-      await updateAppData((current) => ({
+      // Add timeout protection
+      const savePromise = updateAppData((current) => ({
         ...current,
         deficitEntries: updatedEntries,
       }));
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Save timeout")), 10000)
+      );
+
+      await Promise.race([savePromise, timeoutPromise]);
       
       // Reload entries from storage to ensure we have the latest data
       const refreshedData = await loadAppData();
@@ -161,7 +168,10 @@ const DeficitCalculator = () => {
       setTimeout(() => setSaveMessage(""), 3000);
     } catch (error) {
       console.error("Error saving entry:", error);
-      setSaveMessage("✗ Error saving. Please try again.");
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      setSaveMessage(errorMsg.includes("timeout") 
+        ? "✗ Save timeout. Please try again." 
+        : "✗ Error saving. Please try again.");
       setTimeout(() => setSaveMessage(""), 3000);
     }
   };

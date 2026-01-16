@@ -93,23 +93,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                   localStorage.removeItem(GUEST_MODE_KEY);
                 }
                 // Check if profile setup is needed
-                // Check user_data table first, then fallback to user_metadata
-                let profileSetupComplete = false;
-                try {
-                  const appData = await loadAppData();
-                  if (!mounted) return; // Re-check after async operation
-                  profileSetupComplete = appData.profileSetupComplete === true;
-                } catch (err) {
-                  if (!mounted) return; // Re-check after async operation
-                  console.warn("Error checking profile setup:", err);
+                // Check user_metadata first (where profile is saved), then fallback to user_data table
+                let profileSetupComplete = data.session.user.user_metadata?.profileSetupComplete === true;
+                
+                // If not in metadata, check user_data table as fallback
+                if (!profileSetupComplete) {
+                  try {
+                    const appData = await loadAppData();
+                    if (!mounted) return; // Re-check after async operation
+                    profileSetupComplete = appData.profileSetupComplete === true;
+                  } catch (err) {
+                    if (!mounted) return; // Re-check after async operation
+                    console.warn("Error checking profile setup:", err);
+                  }
                 }
                 
                 if (!mounted) return; // Re-check before state updates
-                
-                if (!profileSetupComplete) {
-                  // Also check user_metadata as fallback
-                  profileSetupComplete = data.session.user.user_metadata?.profileSetupComplete === true;
-                }
                 
                 if (!profileSetupComplete) {
                   setShowProfileSetup(true);
@@ -145,23 +144,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                   localStorage.removeItem(GUEST_MODE_KEY);
                 }
                 // Check if profile setup is needed
-                // Check user_data table first, then fallback to user_metadata
-                let profileSetupComplete = false;
-                try {
-                  const appData = await loadAppData();
-                  if (!mounted) return; // Re-check after async operation
-                  profileSetupComplete = appData.profileSetupComplete === true;
-                } catch (err) {
-                  if (!mounted) return; // Re-check after async operation
-                  console.warn("Error checking profile setup:", err);
+                // Check user_metadata first (where profile is saved), then fallback to user_data table
+                let profileSetupComplete = newSession.user.user_metadata?.profileSetupComplete === true;
+                
+                // If not in metadata, check user_data table as fallback
+                if (!profileSetupComplete) {
+                  try {
+                    const appData = await loadAppData();
+                    if (!mounted) return; // Re-check after async operation
+                    profileSetupComplete = appData.profileSetupComplete === true;
+                  } catch (err) {
+                    if (!mounted) return; // Re-check after async operation
+                    console.warn("Error checking profile setup:", err);
+                  }
                 }
                 
                 if (!mounted) return; // Re-check before state updates
-                
-                if (!profileSetupComplete) {
-                  // Also check user_metadata as fallback
-                  profileSetupComplete = newSession.user.user_metadata?.profileSetupComplete === true;
-                }
                 
                 if (!profileSetupComplete) {
                   setShowProfileSetup(true);
@@ -349,7 +347,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const completeProfileSetup = () => {
+    // Immediately hide the profile setup modal
     setShowProfileSetup(false);
+    
+    // If user is authenticated, refresh session to get updated metadata
+    if (typeof window !== "undefined" && isSupabaseConfigured) {
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        // Refresh session in background to update user metadata
+        supabase.auth.getSession().then(({ data }) => {
+          if (data.session) {
+            setSession(data.session);
+          }
+        }).catch(err => {
+          console.warn("Failed to refresh session after profile setup:", err);
+        });
+      }
+    }
   };
 
   const value = useMemo<AuthContextValue>(

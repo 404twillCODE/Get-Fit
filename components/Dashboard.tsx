@@ -22,86 +22,106 @@ const Dashboard = () => {
   useEffect(() => {
     let isMounted = true;
     const loadDashboardData = async () => {
-      const data = await loadAppData();
-      if (!isMounted) return;
+      try {
+        const data = await loadAppData();
+        if (!isMounted) return;
 
-      // Normalize today's date to ensure consistent date key format (using local time)
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayKey = formatDateKey(today);
-      
-      const todayEntry = data.deficitEntries.find(
-        (entry) => entry.date === todayKey
-      );
+        // Normalize today's date to ensure consistent date key format (using local time)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayKey = formatDateKey(today);
+        
+        const todayEntry = data.deficitEntries.find(
+          (entry) => entry.date === todayKey
+        );
 
-      if (todayEntry) {
-        setTodayCalories({
-          eaten: todayEntry.caloriesEaten || 0,
-          burned: todayEntry.caloriesBurned || 0,
+        if (todayEntry) {
+          setTodayCalories({
+            eaten: todayEntry.caloriesEaten || 0,
+            burned: todayEntry.caloriesBurned || 0,
+          });
+        } else {
+          // Reset if no entry found
+          setTodayCalories({ eaten: 0, burned: 0 });
+        }
+
+        const todayIndex = new Date().getDay();
+        const todayWorkout = data.savedWorkouts[todayIndex] || [];
+        setTodayWorkouts(todayWorkout.length);
+
+        const weekly = data.savedWorkouts.map(
+          (workout) => (workout?.length || 0) > 0
+        );
+        setWeeklyWorkouts(weekly);
+
+        const sorted = [...data.deficitEntries].sort((a, b) =>
+          b.date.localeCompare(a.date)
+        );
+        const totalLoggedDays = sorted.length;
+
+        const last7Days = new Date();
+        last7Days.setDate(last7Days.getDate() - 6);
+        last7Days.setHours(0, 0, 0, 0);
+
+        const weekEntries = sorted.filter((entry) => {
+          const entryDate = new Date(entry.date);
+          return entryDate >= last7Days;
         });
-      } else {
-        // Reset if no entry found
+        const weeklyAverage =
+          weekEntries.length > 0
+            ? Math.round(
+                weekEntries.reduce((sum, entry) => sum + entry.deficit, 0) /
+                  weekEntries.length
+              )
+            : 0;
+
+        const entryDates = new Set(sorted.map((entry) => entry.date));
+        let streak = 0;
+        const cursor = new Date();
+        cursor.setHours(0, 0, 0, 0);
+
+        while (true) {
+          const cursorKey = formatDateKey(cursor);
+          if (!entryDates.has(cursorKey)) break;
+          streak += 1;
+          cursor.setDate(cursor.getDate() - 1);
+        }
+
+        setInsights({ totalLoggedDays, weeklyAverage, streak });
+      } catch (error) {
+        console.error("Error loading dashboard data:", error);
+        if (!isMounted) return;
+        // Set defaults on error
         setTodayCalories({ eaten: 0, burned: 0 });
+        setTodayWorkouts(0);
+        setWeeklyWorkouts(Array(7).fill(false));
+        setInsights({ totalLoggedDays: 0, weeklyAverage: 0, streak: 0 });
       }
-
-      const todayIndex = new Date().getDay();
-      const todayWorkout = data.savedWorkouts[todayIndex] || [];
-      setTodayWorkouts(todayWorkout.length);
-
-      const weekly = data.savedWorkouts.map(
-        (workout) => (workout?.length || 0) > 0
-      );
-      setWeeklyWorkouts(weekly);
-
-      const sorted = [...data.deficitEntries].sort((a, b) =>
-        b.date.localeCompare(a.date)
-      );
-      const totalLoggedDays = sorted.length;
-
-      const last7Days = new Date();
-      last7Days.setDate(last7Days.getDate() - 6);
-      last7Days.setHours(0, 0, 0, 0);
-
-      const weekEntries = sorted.filter((entry) => {
-        const entryDate = new Date(entry.date);
-        return entryDate >= last7Days;
-      });
-      const weeklyAverage =
-        weekEntries.length > 0
-          ? Math.round(
-              weekEntries.reduce((sum, entry) => sum + entry.deficit, 0) /
-                weekEntries.length
-            )
-          : 0;
-
-      const entryDates = new Set(sorted.map((entry) => entry.date));
-      let streak = 0;
-      const cursor = new Date();
-      cursor.setHours(0, 0, 0, 0);
-
-      while (true) {
-        const cursorKey = formatDateKey(cursor);
-        if (!entryDates.has(cursorKey)) break;
-        streak += 1;
-        cursor.setDate(cursor.getDate() - 1);
-      }
-
-      setInsights({ totalLoggedDays, weeklyAverage, streak });
     };
 
     loadDashboardData();
     
+    // Debounce refresh handlers to prevent excessive reloads
+    let visibilityTimeout: NodeJS.Timeout | null = null;
+    let focusTimeout: NodeJS.Timeout | null = null;
+    
     // Refresh when page becomes visible (user navigates back from other pages)
     const handleVisibilityChange = () => {
       if (!document.hidden && isMounted) {
-        loadDashboardData();
+        if (visibilityTimeout) clearTimeout(visibilityTimeout);
+        visibilityTimeout = setTimeout(() => {
+          if (isMounted) loadDashboardData();
+        }, 100); // Small delay to debounce
       }
     };
     
     // Also refresh on focus (when user switches back to tab)
     const handleFocus = () => {
       if (isMounted) {
-        loadDashboardData();
+        if (focusTimeout) clearTimeout(focusTimeout);
+        focusTimeout = setTimeout(() => {
+          if (isMounted) loadDashboardData();
+        }, 100); // Small delay to debounce
       }
     };
     
@@ -110,6 +130,8 @@ const Dashboard = () => {
     
     return () => {
       isMounted = false;
+      if (visibilityTimeout) clearTimeout(visibilityTimeout);
+      if (focusTimeout) clearTimeout(focusTimeout);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", handleFocus);
     };

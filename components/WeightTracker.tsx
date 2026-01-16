@@ -43,49 +43,66 @@ const WeightTracker = ({ onClose }: { onClose: () => void }) => {
       return;
     }
 
+    if (isSaving) {
+      return; // Prevent duplicate saves
+    }
+
     setIsSaving(true);
     const dateKey = formatDateKey(selectedDate);
     const timestamp = Date.now();
 
-    const data = await loadAppData();
-    const existingHistory = data.weightHistory || [];
-    
-    // Set account creation date if this is the first weight entry
-    if (existingHistory.length === 0) {
-      const accountCreationDate = new Date();
-      localStorage.setItem("accountCreationDate", accountCreationDate.toISOString());
+    try {
+      const data = await loadAppData();
+      const existingHistory = data.weightHistory || [];
+      
+      // Set account creation date if this is the first weight entry
+      if (existingHistory.length === 0) {
+        const accountCreationDate = new Date();
+        localStorage.setItem("accountCreationDate", accountCreationDate.toISOString());
+      }
+      
+      // Remove existing entry for this date if it exists
+      const filteredHistory = existingHistory.filter(entry => entry.date !== dateKey);
+      
+      // Add new entry
+      const newEntry: WeightEntry = {
+        date: dateKey,
+        weight: weightValue,
+        timestamp,
+      };
+      
+      const updatedHistory = [...filteredHistory, newEntry].sort((a, b) => 
+        b.timestamp - a.timestamp
+      );
+
+      // Add timeout protection
+      const savePromise = updateAppData((current) => ({
+        ...current,
+        weightHistory: updatedHistory,
+      }));
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Save timeout")), 10000)
+      );
+
+      await Promise.race([savePromise, timeoutPromise]);
+
+      setWeightHistory(updatedHistory);
+      
+      // Update reminder date when weight is logged
+      localStorage.setItem("lastWeightReminder", new Date().toISOString());
+      
+      setShowSuccess(true);
+      setIsSaving(false);
+      
+      setTimeout(() => {
+        setShowSuccess(false);
+      }, 2000);
+    } catch (error) {
+      console.error("Error saving weight:", error);
+      setIsSaving(false);
+      // Could add error message display here if needed
     }
-    
-    // Remove existing entry for this date if it exists
-    const filteredHistory = existingHistory.filter(entry => entry.date !== dateKey);
-    
-    // Add new entry
-    const newEntry: WeightEntry = {
-      date: dateKey,
-      weight: weightValue,
-      timestamp,
-    };
-    
-    const updatedHistory = [...filteredHistory, newEntry].sort((a, b) => 
-      b.timestamp - a.timestamp
-    );
-
-    await updateAppData((current) => ({
-      ...current,
-      weightHistory: updatedHistory,
-    }));
-
-    setWeightHistory(updatedHistory);
-    
-    // Update reminder date when weight is logged
-    localStorage.setItem("lastWeightReminder", new Date().toISOString());
-    
-    setShowSuccess(true);
-    setIsSaving(false);
-    
-    setTimeout(() => {
-      setShowSuccess(false);
-    }, 2000);
   };
 
   const handleDelete = async (date: string) => {
