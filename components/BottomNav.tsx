@@ -37,7 +37,7 @@ const BottomNav = () => {
               <Link
                 key={item.path}
                 href={item.path}
-                className="flex-1 flex flex-col items-center justify-center relative min-h-[44px] touch-manipulation"
+                className="flex-1 flex flex-col items-center justify-center relative min-h-[44px] touch-manipulation cursor-pointer"
                 onTouchStart={() => setPressedButton(item.path)}
                 onTouchEnd={() => setPressedButton(null)}
                 onMouseDown={() => setPressedButton(item.path)}
@@ -48,24 +48,24 @@ const BottomNav = () => {
                 {isActive && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute inset-0 bg-[rgb(38,38,38)] rounded-t-2xl"
+                    className="absolute inset-0 bg-[rgb(38,38,38)] rounded-t-2xl pointer-events-none"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                     style={{ opacity: 1 }}
                   />
                 )}
                 {/* Press highlight - shows when button is being pressed (only if not active) */}
                 {isPressed && !isActive && (
-                  <div className="absolute inset-0 bg-[rgb(38,38,38)] rounded-t-2xl opacity-100" />
+                  <div className="absolute inset-0 bg-[rgb(38,38,38)] rounded-t-2xl opacity-100 pointer-events-none" />
                 )}
                 <motion.span
-                  className="text-xl sm:text-2xl mb-0.5 sm:mb-1 relative z-10"
+                  className="text-xl sm:text-2xl mb-0.5 sm:mb-1 relative z-10 pointer-events-none"
                   animate={{ scale: isActive ? 1.1 : 1 }}
                   transition={{ duration: 0.2 }}
                 >
                   {item.icon}
                 </motion.span>
                 <span
-                  className={`text-[10px] sm:text-xs font-medium relative z-10 transition-colors ${
+                  className={`text-[10px] sm:text-xs font-medium relative z-10 transition-colors pointer-events-none ${
                     isActive ? "text-white" : "text-white/50"
                   }`}
                 >
