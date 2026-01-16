@@ -27,6 +27,17 @@ const ProfileSetup = ({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // Convert height from inches to feet/inches for display
+  const heightInInches = profile.height || 0;
+  const heightFeet = Math.floor(heightInInches / 12);
+  const heightInches = Math.round(heightInInches % 12);
+
+  // Handle height changes (convert feet + inches to total inches)
+  const handleHeightChange = (feet: number | undefined, inches: number | undefined) => {
+    const totalInches = (feet || 0) * 12 + (inches || 0);
+    setProfile({ ...profile, height: totalInches > 0 ? totalInches : undefined });
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     setError("");
@@ -67,10 +78,10 @@ const ProfileSetup = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm grid place-items-center p-4">
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
         className="bg-[#0a0a0a] rounded-3xl p-5 lg:p-6 border border-white/20 max-w-md w-full shadow-2xl max-h-[85vh] overflow-y-auto"
       >
         <div className="text-center mb-4">
@@ -112,32 +123,53 @@ const ProfileSetup = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-white/70 mb-1 block">Height (in)</label>
-              <input
-                type="number"
-                placeholder="Height"
-                value={profile.height || ""}
-                onChange={(e) => setProfile({ ...profile, height: parseFloat(e.target.value) || undefined })}
-                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
-                min="1"
-                step="0.1"
-              />
+          <div>
+            <label className="text-xs text-white/70 mb-1 block">Height</label>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <input
+                  type="number"
+                  placeholder="Feet"
+                  value={heightFeet || ""}
+                  onChange={(e) => {
+                    const feet = parseInt(e.target.value) || 0;
+                    handleHeightChange(feet, heightInches);
+                  }}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
+                  min="0"
+                  max="10"
+                />
+                <span className="text-xs text-white/50 mt-1 block">ft</span>
+              </div>
+              <div>
+                <input
+                  type="number"
+                  placeholder="Inches"
+                  value={heightInches || ""}
+                  onChange={(e) => {
+                    const inches = parseInt(e.target.value) || 0;
+                    handleHeightChange(heightFeet, inches);
+                  }}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
+                  min="0"
+                  max="11"
+                />
+                <span className="text-xs text-white/50 mt-1 block">in</span>
+              </div>
             </div>
+          </div>
 
-            <div>
-              <label className="text-xs text-white/70 mb-1 block">Current Weight (lbs)</label>
-              <input
-                type="number"
-                placeholder="Weight"
-                value={profile.currentWeight || ""}
-                onChange={(e) => setProfile({ ...profile, currentWeight: parseFloat(e.target.value) || undefined })}
-                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
-                min="1"
-                step="0.1"
-              />
-            </div>
+          <div>
+            <label className="text-xs text-white/70 mb-1 block">Current Weight (lbs)</label>
+            <input
+              type="number"
+              placeholder="Weight"
+              value={profile.currentWeight || ""}
+              onChange={(e) => setProfile({ ...profile, currentWeight: parseFloat(e.target.value) || undefined })}
+              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
+              min="1"
+              step="0.1"
+            />
           </div>
 
           <div>
@@ -155,34 +187,50 @@ const ProfileSetup = ({
 
           <div>
             <label className="text-xs text-white/70 mb-1 block">Activity Level</label>
-            <select
-              value={profile.activityLevel || ""}
-              onChange={(e) => setProfile({ ...profile, activityLevel: e.target.value as UserProfile["activityLevel"] })}
-              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
-            >
-              <option value="">Select activity level</option>
-              <option value="sedentary">Sedentary (little to no exercise)</option>
-              <option value="lightly_active">Lightly Active (light exercise 1-3 days/week)</option>
-              <option value="moderately_active">Moderately Active (moderate exercise 3-5 days/week)</option>
-              <option value="very_active">Very Active (hard exercise 6-7 days/week)</option>
-              <option value="extremely_active">Extremely Active (very hard exercise, physical job)</option>
-            </select>
+            <div className="relative">
+              <select
+                value={profile.activityLevel || ""}
+                onChange={(e) => setProfile({ ...profile, activityLevel: e.target.value as UserProfile["activityLevel"] })}
+                className="w-full px-3 py-2 pr-8 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none appearance-none cursor-pointer"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2 4L6 8L10 4' stroke='rgba(255,255,255,0.7)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 0.75rem center',
+                  backgroundSize: '12px 12px'
+                }}
+              >
+                <option value="" className="bg-[#0a0a0a] text-white">Select activity level</option>
+                <option value="sedentary" className="bg-[#0a0a0a] text-white">Sedentary (little to no exercise)</option>
+                <option value="lightly_active" className="bg-[#0a0a0a] text-white">Lightly Active (light exercise 1-3 days/week)</option>
+                <option value="moderately_active" className="bg-[#0a0a0a] text-white">Moderately Active (moderate exercise 3-5 days/week)</option>
+                <option value="very_active" className="bg-[#0a0a0a] text-white">Very Active (hard exercise 6-7 days/week)</option>
+                <option value="extremely_active" className="bg-[#0a0a0a] text-white">Extremely Active (very hard exercise, physical job)</option>
+              </select>
+            </div>
           </div>
 
           <div>
             <label className="text-xs text-white/70 mb-1 block">Fitness Goal</label>
-            <select
-              value={profile.fitnessGoal || ""}
-              onChange={(e) => setProfile({ ...profile, fitnessGoal: e.target.value as UserProfile["fitnessGoal"] })}
-              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
-            >
-              <option value="">Select fitness goal</option>
-              <option value="lose_weight">Lose Weight</option>
-              <option value="maintain_weight">Maintain Weight</option>
-              <option value="gain_weight">Gain Weight</option>
-              <option value="build_muscle">Build Muscle</option>
-              <option value="improve_endurance">Improve Endurance</option>
-            </select>
+            <div className="relative">
+              <select
+                value={profile.fitnessGoal || ""}
+                onChange={(e) => setProfile({ ...profile, fitnessGoal: e.target.value as UserProfile["fitnessGoal"] })}
+                className="w-full px-3 py-2 pr-8 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none appearance-none cursor-pointer"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2 4L6 8L10 4' stroke='rgba(255,255,255,0.7)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 0.75rem center',
+                  backgroundSize: '12px 12px'
+                }}
+              >
+                <option value="" className="bg-[#0a0a0a] text-white">Select fitness goal</option>
+                <option value="lose_weight" className="bg-[#0a0a0a] text-white">Lose Weight</option>
+                <option value="maintain_weight" className="bg-[#0a0a0a] text-white">Maintain Weight</option>
+                <option value="gain_weight" className="bg-[#0a0a0a] text-white">Gain Weight</option>
+                <option value="build_muscle" className="bg-[#0a0a0a] text-white">Build Muscle</option>
+                <option value="improve_endurance" className="bg-[#0a0a0a] text-white">Improve Endurance</option>
+              </select>
+            </div>
           </div>
         </div>
 

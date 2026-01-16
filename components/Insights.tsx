@@ -17,6 +17,8 @@ import {
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import ProfileSetup, { type UserProfile } from "@/components/ProfileSetup";
 import AccountSettings from "@/components/AccountSettings";
+import WeightTracker from "@/components/WeightTracker";
+import { type WeightEntry } from "@/lib/storage";
 
 const Insights = () => {
   const [entries, setEntries] = useState<DeficitEntry[]>([]);
@@ -53,7 +55,9 @@ const Insights = () => {
   const [selectedWorkoutHistoryToDelete, setSelectedWorkoutHistoryToDelete] = useState<Set<number>>(new Set());
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [showAccountSettings, setShowAccountSettings] = useState(false);
+  const [showWeightTracker, setShowWeightTracker] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [weightHistory, setWeightHistory] = useState<WeightEntry[]>([]);
 
   const loadData = async () => {
     const data = await loadAppData();
@@ -61,6 +65,7 @@ const Insights = () => {
     setHistory(data.workoutHistory);
     setSchedule(data.workoutSchedule);
     setSavedWorkouts(data.savedWorkouts);
+    setWeightHistory(data.weightHistory || []);
   };
 
   useEffect(() => {
@@ -135,7 +140,7 @@ const Insights = () => {
       : 0;
     const approximateWeightGain = totalDeficit > 0 
       ? totalDeficit / 3500 
-      : 0;
+        : 0;
 
     const streak = (() => {
       if (sortedEntries.length === 0) return 0;
@@ -460,7 +465,63 @@ const Insights = () => {
           </div>
         </motion.div>
 
-      <div className="mb-6 lg:mb-0">
+      <div className="mb-6 lg:mb-0 space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white/5 rounded-2xl p-5 lg:p-6 border border-white/10"
+        >
+          <div className="text-white/60 text-sm lg:text-base mb-4">Weight Trends</div>
+          {weightHistory.length > 0 ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-white/50 text-sm">Latest Weight</span>
+                <span className="text-white font-semibold">
+                  {weightHistory[0].weight.toFixed(1)} lbs
+                </span>
+              </div>
+              {weightHistory.length > 1 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-white/50 text-sm">Change (last 2 entries)</span>
+                  <span className={`font-semibold ${
+                    weightHistory[0].weight - weightHistory[1].weight < 0 
+                      ? "text-green-400" 
+                      : weightHistory[0].weight - weightHistory[1].weight > 0 
+                        ? "text-red-400" 
+                        : "text-white"
+                  }`}>
+                    {weightHistory[0].weight - weightHistory[1].weight > 0 ? "+" : ""}
+                    {(weightHistory[0].weight - weightHistory[1].weight).toFixed(1)} lbs
+                  </span>
+                </div>
+              )}
+              {weightHistory.length > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-white/50 text-sm">Total Entries</span>
+                  <span className="text-white/60 text-sm">{weightHistory.length} logged</span>
+                </div>
+              )}
+              <button
+                onClick={() => setShowWeightTracker(true)}
+                className="w-full mt-3 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors text-sm text-white/70 hover:text-white"
+              >
+                View/Edit Weight History
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-white/50 text-sm">No weight data logged yet.</p>
+              <button
+                onClick={() => setShowWeightTracker(true)}
+                className="w-full py-2 bg-white text-[#0a0a0a] rounded-lg font-semibold hover:bg-white/90 transition-colors text-sm"
+              >
+                Start Tracking Weight
+              </button>
+            </div>
+          )}
+        </motion.div>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -568,21 +629,27 @@ const Insights = () => {
           </div>
           {user && (
             <>
-              <button
+            <button
                 onClick={() => setShowProfileEdit(true)}
                 className="w-full py-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors text-sm mb-3"
-              >
+            >
                 {userProfile ? "✏️ Edit Profile" : "👤 Set Up Profile"}
-              </button>
-              <button
+            </button>
+            <button
                 onClick={() => setShowAccountSettings(true)}
                 className="w-full py-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors text-sm mb-3"
-              >
+            >
                 ⚙️ Account Settings
-              </button>
+            </button>
             </>
           )}
           <button
+            onClick={() => setShowWeightTracker(true)}
+            className="w-full py-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors text-sm mb-3"
+          >
+            ⚖️ Track Weight
+          </button>
+            <button
             onClick={() => {
               // Reset to today's date when opening modal
               const today = new Date();
@@ -595,7 +662,7 @@ const Insights = () => {
             className="w-full py-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors text-sm mb-3"
           >
             📋 Copy Log
-          </button>
+            </button>
           <div className="mt-3">
             <button
               onClick={() => setShowDeleteModal(true)}
@@ -1093,7 +1160,7 @@ const Insights = () => {
                                 <span className="text-xs">
                                   {dayName} ({savedWorkouts[dayIndex].length} exercise{(savedWorkouts[dayIndex] as unknown[]).length !== 1 ? "s" : ""})
                                 </span>
-                                <input
+          <input
                                   type="checkbox"
                                   checked={isSelected}
                                   onChange={(e) => {
@@ -1176,6 +1243,18 @@ const Insights = () => {
       <AnimatePresence>
         {showAccountSettings && (
           <AccountSettings onClose={() => setShowAccountSettings(false)} />
+        )}
+      </AnimatePresence>
+
+      {/* Weight Tracker Modal */}
+      <AnimatePresence>
+        {showWeightTracker && (
+          <WeightTracker 
+            onClose={() => {
+              setShowWeightTracker(false);
+              loadData(); // Reload to update weight history
+            }} 
+          />
         )}
       </AnimatePresence>
     </div>

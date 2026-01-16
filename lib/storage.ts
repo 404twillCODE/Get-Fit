@@ -30,11 +30,18 @@ export type WorkoutHistoryEntry = {
   exercises: unknown[];
 };
 
+export type WeightEntry = {
+  date: string;
+  weight: number; // in lbs
+  timestamp: number;
+};
+
 export type AppData = {
   deficitEntries: DeficitEntry[];
   savedWorkouts: unknown[][];
   workoutHistory: WorkoutHistoryEntry[];
   workoutSchedule: string[];
+  weightHistory: WeightEntry[];
 };
 
 export const STORAGE_KEYS = [
@@ -42,6 +49,7 @@ export const STORAGE_KEYS = [
   "savedWorkouts",
   "workoutHistory",
   "workoutSchedule",
+  "weightHistory",
 ] as const;
 
 const safeJsonParse = <T>(value: string | null, fallback: T): T => {
@@ -58,6 +66,7 @@ export const getDefaultData = (): AppData => ({
   savedWorkouts: Array.from({ length: 7 }, () => []),
   workoutHistory: [],
   workoutSchedule: Array(7).fill("Rest Day"),
+  weightHistory: [],
 });
 
 export const getLocalData = (): AppData => {
@@ -79,6 +88,10 @@ export const getLocalData = (): AppData => {
       localStorage.getItem("workoutSchedule"),
       fallback.workoutSchedule
     ),
+    weightHistory: safeJsonParse<WeightEntry[]>(
+      localStorage.getItem("weightHistory"),
+      fallback.weightHistory
+    ),
   };
 };
 
@@ -87,6 +100,7 @@ export const setLocalData = (data: AppData) => {
   localStorage.setItem("savedWorkouts", JSON.stringify(data.savedWorkouts));
   localStorage.setItem("workoutHistory", JSON.stringify(data.workoutHistory));
   localStorage.setItem("workoutSchedule", JSON.stringify(data.workoutSchedule));
+  localStorage.setItem("weightHistory", JSON.stringify(data.weightHistory));
 };
 
 export const getAllStorageData = (): Record<string, unknown> => {

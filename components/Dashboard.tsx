@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { loadAppData } from "@/lib/dataStore";
 import { formatDateKey } from "@/lib/storage";
+import WeeklyWeightReminder from "./WeeklyWeightReminder";
 
 const Dashboard = () => {
   const [todayCalories, setTodayCalories] = useState({ eaten: 0, burned: 0 });
@@ -294,6 +295,7 @@ const Dashboard = () => {
           </div>
         </motion.div>
       </div>
+      <WeeklyWeightReminder />
     </div>
   );
 };

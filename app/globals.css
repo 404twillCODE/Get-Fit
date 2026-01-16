@@ -64,6 +64,24 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
+/* Select dropdown styling */
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+select::-ms-expand {
+  display: none;
+}
+
+/* Style select options - limited browser support */
+select option {
+  background-color: #0a0a0a;
+  color: #ffffff;
+  padding: 0.5rem;
+}
+
 /* Smooth transitions for mobile */
 * {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
