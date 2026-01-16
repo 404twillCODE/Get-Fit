@@ -6,8 +6,8 @@ import { useAuth } from "@/components/AuthProvider";
 import { isSupabaseConfigured } from "@/lib/supabaseClient";
 
 const AuthScreen = () => {
-  const { signIn, signUp, continueAsGuest } = useAuth();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const { signIn, signUp, signInWithMagicLink, resetPassword, continueAsGuest } = useAuth();
+  const [mode, setMode] = useState<"signin" | "signup" | "magiclink" | "reset">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -16,6 +16,11 @@ const AuthScreen = () => {
 
   const handleSubmit = async () => {
     setStatus("");
+    
+    if (!email) {
+      setStatus("Please enter your email.");
+      return;
+    }
     
     // Validate password confirmation for sign up
     if (mode === "signup") {
@@ -30,17 +35,37 @@ const AuthScreen = () => {
     }
     
     setIsLoading(true);
-    const errorMessage =
-      mode === "signin"
-        ? await signIn(email, password)
-        : await signUp(email, password);
+    let errorMessage: string | null = null;
+    
+    if (mode === "magiclink") {
+      errorMessage = await signInWithMagicLink(email);
+      if (!errorMessage) {
+        setStatus("Check your email for the magic link!");
+      }
+    } else if (mode === "reset") {
+      errorMessage = await resetPassword(email);
+      if (!errorMessage) {
+        setStatus("Check your email for password reset instructions!");
+      }
+    } else if (mode === "signin") {
+      if (!password) {
+        setStatus("Please enter your password.");
+        setIsLoading(false);
+        return;
+      }
+      errorMessage = await signIn(email, password);
+    } else if (mode === "signup") {
+      errorMessage = await signUp(email, password);
+      if (!errorMessage) {
+        setStatus("Account created. You can now sign in.");
+        setMode("signin");
+        setPassword("");
+        setConfirmPassword("");
+      }
+    }
+    
     if (errorMessage) {
       setStatus(errorMessage);
-    } else if (mode === "signup") {
-      setStatus("Account created. You can now sign in.");
-      setMode("signin");
-      setPassword("");
-      setConfirmPassword("");
     }
     setIsLoading(false);
   };
@@ -67,7 +92,10 @@ const AuthScreen = () => {
 
         <div className="flex gap-2 mb-4">
           <button
-            onClick={() => setMode("signin")}
+            onClick={() => {
+              setMode("signin");
+              setStatus("");
+            }}
             className={`flex-1 py-2 rounded-xl text-sm border ${
               mode === "signin"
                 ? "bg-white text-[#0a0a0a] border-white"
@@ -77,7 +105,10 @@ const AuthScreen = () => {
             Sign In
           </button>
           <button
-            onClick={() => setMode("signup")}
+            onClick={() => {
+              setMode("signup");
+              setStatus("");
+            }}
             className={`flex-1 py-2 rounded-xl text-sm border ${
               mode === "signup"
                 ? "bg-white text-[#0a0a0a] border-white"
@@ -96,13 +127,15 @@ const AuthScreen = () => {
             onChange={(event) => setEmail(event.target.value)}
             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm"
           />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm"
-          />
+          {mode !== "magiclink" && mode !== "reset" && (
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm"
+            />
+          )}
           {mode === "signup" && (
             <input
               type="password"
@@ -127,10 +160,61 @@ const AuthScreen = () => {
             ? "Please wait..."
             : mode === "signin"
               ? "Sign In"
-              : "Create Account"}
+              : mode === "signup"
+                ? "Create Account"
+                : mode === "magiclink"
+                  ? "Send Magic Link"
+                  : "Send Reset Link"}
         </motion.button>
 
-        <div className="mt-6 text-center">
+        <div className="mt-4 space-y-2">
+          {mode === "signin" && (
+            <>
+              <button
+                onClick={() => {
+                  setMode("magiclink");
+                  setStatus("");
+                }}
+                className="w-full text-sm text-white/70 hover:text-white"
+              >
+                Sign in with magic link
+              </button>
+              <button
+                onClick={() => {
+                  setMode("reset");
+                  setStatus("");
+                }}
+                className="w-full text-sm text-white/70 hover:text-white"
+              >
+                Forgot password?
+              </button>
+            </>
+          )}
+          {mode === "magiclink" && (
+            <button
+              onClick={() => {
+                setMode("signin");
+                setStatus("");
+              }}
+              className="w-full text-sm text-white/70 hover:text-white"
+            >
+              Back to password sign in
+            </button>
+          )}
+          {mode === "reset" && (
+            <button
+              onClick={() => {
+                setMode("signin");
+                setStatus("");
+              }}
+              className="w-full text-sm text-white/70 hover:text-white"
+            >
+              Back to sign in
+            </button>
+          )}
+        </div>
+
+        <div className="mt-4 text-center">
           <button
             onClick={continueAsGuest}
             className="text-sm text-white/70 hover:text-white"

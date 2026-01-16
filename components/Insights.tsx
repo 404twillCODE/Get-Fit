@@ -16,6 +16,7 @@ import {
 } from "@/lib/dataStore";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import ProfileSetup, { type UserProfile } from "@/components/ProfileSetup";
+import AccountSettings from "@/components/AccountSettings";
 
 const Insights = () => {
   const [entries, setEntries] = useState<DeficitEntry[]>([]);
@@ -51,6 +52,7 @@ const Insights = () => {
   const [selectedWorkoutDaysToDelete, setSelectedWorkoutDaysToDelete] = useState<Set<number>>(new Set());
   const [selectedWorkoutHistoryToDelete, setSelectedWorkoutHistoryToDelete] = useState<Set<number>>(new Set());
   const [showProfileEdit, setShowProfileEdit] = useState(false);
+  const [showAccountSettings, setShowAccountSettings] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   const loadData = async () => {
@@ -545,12 +547,20 @@ const Insights = () => {
             )}
           </div>
           {user && (
-            <button
-              onClick={() => setShowProfileEdit(true)}
-              className="w-full py-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors text-sm mb-3"
-            >
-              {userProfile ? "✏️ Edit Profile" : "👤 Set Up Profile"}
-            </button>
+            <>
+              <button
+                onClick={() => setShowProfileEdit(true)}
+                className="w-full py-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors text-sm mb-3"
+              >
+                {userProfile ? "✏️ Edit Profile" : "👤 Set Up Profile"}
+              </button>
+              <button
+                onClick={() => setShowAccountSettings(true)}
+                className="w-full py-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors text-sm mb-3"
+              >
+                ⚙️ Account Settings
+              </button>
+            </>
           )}
           <button
             onClick={() => {
@@ -1139,6 +1149,13 @@ const Insights = () => {
               loadUserProfile();
             }}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Account Settings Modal */}
+      <AnimatePresence>
+        {showAccountSettings && (
+          <AccountSettings onClose={() => setShowAccountSettings(false)} />
         )}
       </AnimatePresence>
     </div>

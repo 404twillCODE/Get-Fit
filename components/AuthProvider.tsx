@@ -13,6 +13,11 @@ type AuthContextValue = {
   showProfileSetup: boolean;
   signIn: (email: string, password: string) => Promise<string | null>;
   signUp: (email: string, password: string) => Promise<string | null>;
+  signInWithMagicLink: (email: string) => Promise<string | null>;
+  resetPassword: (email: string) => Promise<string | null>;
+  updateEmail: (newEmail: string) => Promise<string | null>;
+  updatePassword: (newPassword: string) => Promise<string | null>;
+  inviteUser: (email: string) => Promise<string | null>;
   signOut: () => Promise<void>;
   continueAsGuest: () => void;
   completeProfileSetup: () => void;
@@ -159,6 +164,74 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return error ? error.message : null;
   };
 
+  const signInWithMagicLink = async (email: string) => {
+    if (!isSupabaseConfigured) {
+      return "Supabase is not configured.";
+    }
+    const supabase = getSupabaseClient();
+    if (!supabase) return "Supabase is not configured.";
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+      },
+    });
+    return error ? error.message : null;
+  };
+
+  const resetPassword = async (email: string) => {
+    if (!isSupabaseConfigured) {
+      return "Supabase is not configured.";
+    }
+    const supabase = getSupabaseClient();
+    if (!supabase) return "Supabase is not configured.";
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined,
+    });
+    return error ? error.message : null;
+  };
+
+  const updateEmail = async (newEmail: string) => {
+    if (!isSupabaseConfigured) {
+      return "Supabase is not configured.";
+    }
+    const supabase = getSupabaseClient();
+    if (!supabase) return "Supabase is not configured.";
+    const { error } = await supabase.auth.updateUser({
+      email: newEmail,
+    });
+    return error ? error.message : null;
+  };
+
+  const updatePassword = async (newPassword: string) => {
+    if (!isSupabaseConfigured) {
+      return "Supabase is not configured.";
+    }
+    const supabase = getSupabaseClient();
+    if (!supabase) return "Supabase is not configured.";
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+    return error ? error.message : null;
+  };
+
+  const inviteUser = async (email: string) => {
+    if (!isSupabaseConfigured) {
+      return "Supabase is not configured.";
+    }
+    const supabase = getSupabaseClient();
+    if (!supabase) return "Supabase is not configured.";
+    // Use magic link to invite user
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+        shouldCreateUser: true,
+      },
+    });
+    return error ? error.message : null;
+  };
+
   const signOut = async () => {
     const supabase = getSupabaseClient();
     if (!supabase) return;
@@ -184,6 +257,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       showProfileSetup,
       signIn,
       signUp,
+      signInWithMagicLink,
+      resetPassword,
+      updateEmail,
+      updatePassword,
+      inviteUser,
       signOut,
       continueAsGuest,
       completeProfileSetup,
