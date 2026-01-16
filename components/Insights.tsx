@@ -588,10 +588,13 @@ const Insights = () => {
                         return <div key={idx} className="aspect-square" />;
                       }
                       
-                      const dateKey = day.toISOString().split("T")[0];
+                      // Normalize the date to ensure consistent date key format
+                      const dayNormalized = new Date(day);
+                      dayNormalized.setHours(0, 0, 0, 0);
+                      const dateKey = dayNormalized.toISOString().split("T")[0];
                       const today = new Date();
                       today.setHours(0, 0, 0, 0);
-                      const isPast = day <= today;
+                      const isPast = dayNormalized <= today;
                       const isSelected = selectedDates.has(dateKey);
                       const hasData = entries.some((e) => e.date === dateKey);
                       
