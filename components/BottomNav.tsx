@@ -26,8 +26,13 @@ const BottomNav = () => {
       <div className="max-w-md mx-auto px-2 sm:px-4">
         <div className="flex items-center justify-around h-16 sm:h-16">
           {navItems.map((item) => {
-            const isActive = pathname === item.path;
+            // Normalize pathname to handle basePath and trailing slashes
+            const normalizedPathname = pathname?.replace(/\/$/, '') || '/';
+            const normalizedItemPath = item.path === '/' ? '/' : item.path.replace(/\/$/, '');
+            const isActive = normalizedPathname === normalizedItemPath || 
+                           (normalizedPathname === '' && normalizedItemPath === '/');
             const isPressed = pressedButton === item.path;
+            
             return (
               <Link
                 key={item.path}
@@ -39,17 +44,18 @@ const BottomNav = () => {
                 onMouseUp={() => setPressedButton(null)}
                 onMouseLeave={() => setPressedButton(null)}
               >
-                {/* Press highlight - shows when button is being pressed */}
-                {isPressed && !isActive && (
-                  <div className="absolute inset-0 bg-[rgb(38,38,38)] rounded-t-2xl" />
-                )}
                 {/* Active highlight - always shows for current route */}
                 {isActive && (
                   <motion.div
                     layoutId="activeTab"
                     className="absolute inset-0 bg-[rgb(38,38,38)] rounded-t-2xl"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    style={{ opacity: 1 }}
                   />
+                )}
+                {/* Press highlight - shows when button is being pressed (only if not active) */}
+                {isPressed && !isActive && (
+                  <div className="absolute inset-0 bg-[rgb(38,38,38)] rounded-t-2xl opacity-100" />
                 )}
                 <motion.span
                   className="text-xl sm:text-2xl mb-0.5 sm:mb-1 relative z-10"
