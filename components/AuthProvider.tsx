@@ -97,10 +97,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 let profileSetupComplete = false;
                 try {
                   const appData = await loadAppData();
+                  if (!mounted) return; // Re-check after async operation
                   profileSetupComplete = appData.profileSetupComplete === true;
                 } catch (err) {
+                  if (!mounted) return; // Re-check after async operation
                   console.warn("Error checking profile setup:", err);
                 }
+                
+                if (!mounted) return; // Re-check before state updates
                 
                 if (!profileSetupComplete) {
                   // Also check user_metadata as fallback
@@ -112,13 +116,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 }
                 try {
                   await ensureUserData();
+                  if (!mounted) return; // Re-check after async operation
                   // Retry any failed syncs when user logs in
                   await retryFailedSyncs();
+                  if (!mounted) return; // Re-check after async operation
                 } catch (err) {
+                  if (!mounted) return; // Re-check after async operation
                   console.error("Error ensuring user data:", err);
                 }
               }
-            setLoading(false);
+            if (mounted) {
+              setLoading(false);
+            }
           }
         } catch (err) {
           console.error("Error getting session:", err);
@@ -140,10 +149,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 let profileSetupComplete = false;
                 try {
                   const appData = await loadAppData();
+                  if (!mounted) return; // Re-check after async operation
                   profileSetupComplete = appData.profileSetupComplete === true;
                 } catch (err) {
+                  if (!mounted) return; // Re-check after async operation
                   console.warn("Error checking profile setup:", err);
                 }
+                
+                if (!mounted) return; // Re-check before state updates
                 
                 if (!profileSetupComplete) {
                   // Also check user_metadata as fallback
@@ -155,9 +168,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 }
                 try {
                   await ensureUserData();
+                  if (!mounted) return; // Re-check after async operation
                   // Retry any failed syncs when user logs in
                   await retryFailedSyncs();
+                  if (!mounted) return; // Re-check after async operation
                 } catch (err) {
+                  if (!mounted) return; // Re-check after async operation
                   console.error("Error ensuring user data:", err);
                 }
               }

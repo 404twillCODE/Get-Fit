@@ -83,7 +83,7 @@ export const getDefaultData = (): AppData => ({
   profileSetupComplete: false,
 });
 
-export const getLocalData = (): AppData => {
+export const getLocalData = (includeGuestProfile = false): AppData => {
   const fallback = getDefaultData();
   const data = {
     deficitEntries: safeJsonParse<DeficitEntry[]>(
@@ -108,14 +108,17 @@ export const getLocalData = (): AppData => {
     ),
   };
   
-  // Load profile from localStorage if it exists (for guest users)
-  const guestProfile = localStorage.getItem("guestProfile");
-  if (guestProfile) {
-    try {
-      data.profile = JSON.parse(guestProfile);
-      data.profileSetupComplete = localStorage.getItem("guestProfileSetupComplete") === "true";
-    } catch {
-      // Ignore parse errors
+  // Only load profile from localStorage if explicitly requested (for guest users)
+  // This prevents guest profile data from being synced to authenticated users
+  if (includeGuestProfile) {
+    const guestProfile = localStorage.getItem("guestProfile");
+    if (guestProfile) {
+      try {
+        data.profile = JSON.parse(guestProfile);
+        data.profileSetupComplete = localStorage.getItem("guestProfileSetupComplete") === "true";
+      } catch {
+        // Ignore parse errors
+      }
     }
   }
   

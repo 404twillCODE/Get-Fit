@@ -141,7 +141,8 @@ const upsertRemoteData = async (
 export const loadAppData = async (): Promise<AppData> => {
   const userId = await getSessionUserId();
   if (!userId) {
-    return getLocalData();
+    // For guest users, include guest profile data
+    return getLocalData(true);
   }
 
   const remoteData = await fetchRemoteData(userId);
@@ -150,7 +151,8 @@ export const loadAppData = async (): Promise<AppData> => {
     return remoteData;
   }
 
-  const localData = getLocalData();
+  // For authenticated users, exclude guest profile data to prevent overwriting
+  const localData = getLocalData(false);
   await upsertRemoteData(userId, localData);
   return localData;
 };
@@ -186,7 +188,8 @@ export const ensureUserData = async () => {
     setLocalData(remoteData);
     return;
   }
-  await upsertRemoteData(userId, getLocalData());
+  // Exclude guest profile data for authenticated users
+  await upsertRemoteData(userId, getLocalData(false));
 };
 
 export const pullFromSupabase = async (): Promise<AppData | null> => {
@@ -201,7 +204,8 @@ export const pullFromSupabase = async (): Promise<AppData | null> => {
 export const pushToSupabase = async (): Promise<boolean> => {
   const userId = await getSessionUserId();
   if (!userId) return false;
-  const localData = getLocalData();
+  // Exclude guest profile data for authenticated users
+  const localData = getLocalData(false);
   return await upsertRemoteData(userId, localData);
 };
 

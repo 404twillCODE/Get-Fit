@@ -61,12 +61,8 @@ const ProfileSetup = ({
           };
           
           // Save to Supabase user_data table
-          const success = await updateAppData(() => updatedData);
-          
-          if (!success) {
-            console.warn("Failed to save to Supabase, but saved locally");
-            // Still consider it a success since it's saved locally
-          }
+          // updateAppData returns the updated AppData, not a boolean
+          await updateAppData(() => updatedData);
           
           // Also try to save to user_metadata as a backup (non-blocking)
           const supabase = getSupabaseClient();
