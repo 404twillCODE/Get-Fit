@@ -23,10 +23,19 @@ const Dashboard = () => {
       const data = await loadAppData();
       if (!isMounted) return;
 
-      const todayKey = new Date().toISOString().split("T")[0];
+      // Normalize today's date to ensure consistent date key format
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayKey = today.toISOString().split("T")[0];
+      
+      console.log("Dashboard loading - todayKey:", todayKey);
+      console.log("Available entries:", data.deficitEntries.map(e => e.date));
+      
       const todayEntry = data.deficitEntries.find(
         (entry) => entry.date === todayKey
       );
+
+      console.log("Today's entry found:", todayEntry);
 
       if (todayEntry) {
         setTodayCalories({
