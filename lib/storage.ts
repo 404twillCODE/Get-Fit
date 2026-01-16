@@ -85,7 +85,7 @@ export const getDefaultData = (): AppData => ({
 
 export const getLocalData = (includeGuestProfile = false): AppData => {
   const fallback = getDefaultData();
-  const data = {
+  const data: AppData = {
     deficitEntries: safeJsonParse<DeficitEntry[]>(
       localStorage.getItem("deficitEntries"),
       fallback.deficitEntries
@@ -106,6 +106,8 @@ export const getLocalData = (includeGuestProfile = false): AppData => {
       localStorage.getItem("weightHistory"),
       fallback.weightHistory
     ),
+    profile: fallback.profile,
+    profileSetupComplete: fallback.profileSetupComplete,
   };
   
   // Only load profile from localStorage if explicitly requested (for guest users)
