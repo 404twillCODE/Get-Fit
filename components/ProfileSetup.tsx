@@ -71,90 +71,94 @@ const ProfileSetup = ({
       <motion.div
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="bg-[#0a0a0a] rounded-3xl p-6 lg:p-8 border border-white/20 max-w-md sm:max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto -mt-8"
+        className="bg-[#0a0a0a] rounded-3xl p-5 lg:p-6 border border-white/20 max-w-md w-full shadow-2xl max-h-[85vh] overflow-y-auto"
       >
-        <div className="text-center mb-6">
-          <div className="text-2xl mb-2">👤</div>
-          <h3 className="text-xl font-bold mb-2">
+        <div className="text-center mb-4">
+          <div className="text-2xl mb-1">👤</div>
+          <h3 className="text-lg font-bold mb-1">
             {initialProfile ? "Edit Your Profile" : "Welcome! Let's set up your profile"}
           </h3>
-          <p className="text-white/60 text-sm">
+          <p className="text-white/60 text-xs">
             {initialProfile 
               ? "Update your profile information"
               : "Tell us about yourself to personalize your experience"}
           </p>
         </div>
 
-        <div className="space-y-4 mb-6">
-          <div>
-            <label className="text-sm text-white/70 mb-2 block">Name (optional)</label>
-            <input
-              type="text"
-              placeholder="Your name"
-              value={profile.name || ""}
-              onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:border-white/20 focus:outline-none"
-            />
+        <div className="space-y-3 mb-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-white/70 mb-1 block">Name (optional)</label>
+              <input
+                type="text"
+                placeholder="Your name"
+                value={profile.name || ""}
+                onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-white/70 mb-1 block">Age</label>
+              <input
+                type="number"
+                placeholder="Age"
+                value={profile.age || ""}
+                onChange={(e) => setProfile({ ...profile, age: parseInt(e.target.value) || undefined })}
+                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
+                min="1"
+                max="120"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-white/70 mb-1 block">Height (in)</label>
+              <input
+                type="number"
+                placeholder="Height"
+                value={profile.height || ""}
+                onChange={(e) => setProfile({ ...profile, height: parseFloat(e.target.value) || undefined })}
+                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
+                min="1"
+                step="0.1"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-white/70 mb-1 block">Current Weight (lbs)</label>
+              <input
+                type="number"
+                placeholder="Weight"
+                value={profile.currentWeight || ""}
+                onChange={(e) => setProfile({ ...profile, currentWeight: parseFloat(e.target.value) || undefined })}
+                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
+                min="1"
+                step="0.1"
+              />
+            </div>
           </div>
 
           <div>
-            <label className="text-sm text-white/70 mb-2 block">Age</label>
-            <input
-              type="number"
-              placeholder="Your age"
-              value={profile.age || ""}
-              onChange={(e) => setProfile({ ...profile, age: parseInt(e.target.value) || undefined })}
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:border-white/20 focus:outline-none"
-              min="1"
-              max="120"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm text-white/70 mb-2 block">Height (inches)</label>
-            <input
-              type="number"
-              placeholder="Your height in inches"
-              value={profile.height || ""}
-              onChange={(e) => setProfile({ ...profile, height: parseFloat(e.target.value) || undefined })}
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:border-white/20 focus:outline-none"
-              min="1"
-              step="0.1"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm text-white/70 mb-2 block">Current Weight (lbs)</label>
-            <input
-              type="number"
-              placeholder="Your current weight"
-              value={profile.currentWeight || ""}
-              onChange={(e) => setProfile({ ...profile, currentWeight: parseFloat(e.target.value) || undefined })}
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:border-white/20 focus:outline-none"
-              min="1"
-              step="0.1"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm text-white/70 mb-2 block">Goal Weight (lbs)</label>
+            <label className="text-xs text-white/70 mb-1 block">Goal Weight (lbs)</label>
             <input
               type="number"
               placeholder="Your goal weight"
               value={profile.goalWeight || ""}
               onChange={(e) => setProfile({ ...profile, goalWeight: parseFloat(e.target.value) || undefined })}
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:border-white/20 focus:outline-none"
+              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
               min="1"
               step="0.1"
             />
           </div>
 
           <div>
-            <label className="text-sm text-white/70 mb-2 block">Activity Level</label>
+            <label className="text-xs text-white/70 mb-1 block">Activity Level</label>
             <select
               value={profile.activityLevel || ""}
               onChange={(e) => setProfile({ ...profile, activityLevel: e.target.value as UserProfile["activityLevel"] })}
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:border-white/20 focus:outline-none"
+              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
             >
               <option value="">Select activity level</option>
               <option value="sedentary">Sedentary (little to no exercise)</option>
@@ -166,11 +170,11 @@ const ProfileSetup = ({
           </div>
 
           <div>
-            <label className="text-sm text-white/70 mb-2 block">Fitness Goal</label>
+            <label className="text-xs text-white/70 mb-1 block">Fitness Goal</label>
             <select
               value={profile.fitnessGoal || ""}
               onChange={(e) => setProfile({ ...profile, fitnessGoal: e.target.value as UserProfile["fitnessGoal"] })}
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:border-white/20 focus:outline-none"
+              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
             >
               <option value="">Select fitness goal</option>
               <option value="lose_weight">Lose Weight</option>
@@ -183,23 +187,24 @@ const ProfileSetup = ({
         </div>
 
         {error && (
-          <div className="mb-4 text-sm text-red-400">{error}</div>
+          <div className="mb-3 text-xs text-red-400">{error}</div>
         )}
 
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="w-full py-3 bg-white text-[#0a0a0a] rounded-xl font-semibold hover:bg-white/90 transition-colors disabled:opacity-60"
-        >
-          {isSaving ? "Saving..." : "Save Profile"}
-        </button>
-
-        <button
-          onClick={onComplete}
-          className="w-full mt-3 py-3 bg-white/5 border border-white/10 rounded-xl font-medium hover:bg-white/10 transition-colors text-sm"
-        >
-          Skip for now
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={onComplete}
+            className="flex-1 py-2.5 bg-white/5 border border-white/10 rounded-lg font-medium hover:bg-white/10 transition-colors text-sm"
+          >
+            Skip
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex-1 py-2.5 bg-white text-[#0a0a0a] rounded-lg font-semibold hover:bg-white/90 transition-colors disabled:opacity-60 text-sm"
+          >
+            {isSaving ? "Saving..." : "Save"}
+          </button>
+        </div>
       </motion.div>
     </div>
   );
