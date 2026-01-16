@@ -138,14 +138,14 @@ const WorkoutTracker = () => {
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="pt-12 pb-6 px-4 sm:px-6 lg:px-8 text-center lg:text-left"
+        className="pt-12 pb-6 px-4 sm:px-6 lg:px-8"
       >
-        <h1 className="text-3xl lg:text-4xl font-bold mb-4">Workout Tracker</h1>
+        <h1 className="text-3xl lg:text-4xl font-bold mb-4 text-center">Workout Tracker</h1>
 
         {/* Day Selector */}
         <div className="mb-6">
-          <div className="text-white/60 text-sm mb-3 text-center lg:text-left">Select Day</div>
-          <div className="flex gap-2 flex-wrap justify-center lg:justify-start">
+          <div className="text-white/60 text-sm mb-3 text-center">Select Day</div>
+          <div className="flex gap-2 flex-wrap justify-center">
             {days.map((day, index) => (
               <button
                 key={day}
@@ -162,13 +162,13 @@ const WorkoutTracker = () => {
           </div>
         </div>
 
-        <div className="text-white/60 text-sm mb-2 text-center lg:text-left">
+        <div className="text-white/60 text-sm mb-2 text-center">
           {days[currentDayIndex]} - {workoutSchedule[currentDayIndex]}
         </div>
       </motion.header>
 
       {/* Add Exercise Button */}
-      <div className="px-4 sm:px-6 lg:px-8 mb-6 flex justify-center lg:justify-start">
+      <div className="px-4 sm:px-6 lg:px-8 mb-6 flex justify-center">
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
@@ -189,7 +189,7 @@ const WorkoutTracker = () => {
             No exercises added yet. Click &quot;Add Exercise&quot; to get started!
           </div>
         ) : (
-          <div className="space-y-4 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-6 lg:space-y-0">
+          <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0 lg:max-w-4xl lg:mx-auto">
             <AnimatePresence>
               {workouts.map((exercise) => (
                 <motion.div
