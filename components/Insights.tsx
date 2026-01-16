@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import {
   getDefaultData,
+  formatDateKey,
   type AppData,
   type DeficitEntry,
   type WorkoutHistoryEntry,
@@ -22,7 +23,7 @@ const Insights = () => {
   const [syncStatus, setSyncStatus] = useState("");
   const { user, isGuest, signOut } = useAuth();
   const [showCopyModal, setShowCopyModal] = useState(false);
-  const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set([new Date().toISOString().split("T")[0]]));
+  const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set([formatDateKey(new Date())]));
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [lastClickedDate, setLastClickedDate] = useState<string | null>(null);
   const [copyOptions, setCopyOptions] = useState({
@@ -65,7 +66,7 @@ const Insights = () => {
     if (showCopyModal) {
       const today = new Date();
       today.setHours(0, 0, 0, 0); // Normalize to midnight
-      const todayKey = today.toISOString().split("T")[0];
+      const todayKey = formatDateKey(today);
       setSelectedDates(new Set([todayKey]));
       setLastClickedDate(todayKey);
       setCurrentMonth(new Date()); // Use current date for month view
@@ -114,7 +115,7 @@ const Insights = () => {
       cursor.setHours(0, 0, 0, 0);
 
       while (true) {
-        const cursorKey = cursor.toISOString().split("T")[0];
+        const cursorKey = formatDateKey(cursor);
         if (!entryDates.has(cursorKey)) break;
         count += 1;
         cursor.setDate(cursor.getDate() - 1);
@@ -226,7 +227,7 @@ const Insights = () => {
       
       const currentDate = new Date(earlierDate);
       while (currentDate <= laterDate) {
-        const dateKeyToAdd = currentDate.toISOString().split("T")[0];
+        const dateKeyToAdd = formatDateKey(currentDate);
         const dateToCheck = new Date(currentDate);
         dateToCheck.setHours(0, 0, 0, 0);
         
@@ -531,7 +532,7 @@ const Insights = () => {
             onClick={() => {
               // Reset to today's date when opening modal
               const today = new Date();
-              const todayKey = today.toISOString().split("T")[0];
+              const todayKey = formatDateKey(today);
               setSelectedDates(new Set([todayKey]));
               setLastClickedDate(todayKey);
               setCurrentMonth(today); // Ensure current month shows today
@@ -651,7 +652,7 @@ const Insights = () => {
                       // Normalize the date to ensure consistent date key format
                       const dayNormalized = new Date(day);
                       dayNormalized.setHours(0, 0, 0, 0);
-                      const dateKey = dayNormalized.toISOString().split("T")[0];
+                      const dateKey = formatDateKey(dayNormalized);
                       const today = new Date();
                       today.setHours(0, 0, 0, 0);
                       const isPast = dayNormalized <= today;

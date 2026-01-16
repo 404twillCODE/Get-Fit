@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { loadAppData, updateAppData } from "@/lib/dataStore";
+import { formatDateKey } from "@/lib/storage";
 
 interface NutritionData {
   calories: number;
@@ -52,9 +53,7 @@ const DeficitCalculator = () => {
     calculateStats();
   }, [currentDate, entries]);
 
-  const formatDateKey = (date: Date) => {
-    return date.toISOString().split("T")[0];
-  };
+  // formatDateKey is now imported from lib/storage
 
   const loadEntries = async () => {
     const data = await loadAppData();

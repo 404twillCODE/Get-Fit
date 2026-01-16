@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { loadAppData } from "@/lib/dataStore";
+import { formatDateKey } from "@/lib/storage";
 
 const Dashboard = () => {
   const [todayCalories, setTodayCalories] = useState({ eaten: 0, burned: 0 });
@@ -23,19 +24,14 @@ const Dashboard = () => {
       const data = await loadAppData();
       if (!isMounted) return;
 
-      // Normalize today's date to ensure consistent date key format
+      // Normalize today's date to ensure consistent date key format (using local time)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const todayKey = today.toISOString().split("T")[0];
-      
-      console.log("Dashboard loading - todayKey:", todayKey);
-      console.log("Available entries:", data.deficitEntries.map(e => e.date));
+      const todayKey = formatDateKey(today);
       
       const todayEntry = data.deficitEntries.find(
         (entry) => entry.date === todayKey
       );
-
-      console.log("Today's entry found:", todayEntry);
 
       if (todayEntry) {
         setTodayCalories({
@@ -83,7 +79,7 @@ const Dashboard = () => {
       cursor.setHours(0, 0, 0, 0);
 
       while (true) {
-        const cursorKey = cursor.toISOString().split("T")[0];
+        const cursorKey = formatDateKey(cursor);
         if (!entryDates.has(cursorKey)) break;
         streak += 1;
         cursor.setDate(cursor.getDate() - 1);

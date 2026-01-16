@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { loadAppData, updateAppData } from "@/lib/dataStore";
+import { formatDateKey } from "@/lib/storage";
 
 interface Set {
   setNumber: number;
@@ -115,7 +116,7 @@ const WorkoutTracker = () => {
     }
 
     const workoutEntry = {
-      date: new Date().toISOString().split("T")[0],
+      date: formatDateKey(new Date()),
       timestamp: Date.now(),
       dayOfWeek: currentDayIndex,
       workoutType: workoutSchedule[currentDayIndex],
