@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -27,26 +27,27 @@ const BottomNav = () => {
   });
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[#0a0a0a]/98 backdrop-blur-xl border-t border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.3)]">
-      <div className="max-w-md mx-auto px-2 sm:px-4 relative">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[#0a0a0a] border-t border-white/10">
+      <div className="max-w-md mx-auto px-1 sm:px-2 relative">
         {/* Animated highlight background - moves smoothly between tabs */}
-        <motion.div
-          className="absolute inset-y-0 bg-[rgb(38,38,38)] rounded-t-2xl pointer-events-none"
-          initial={false}
-          animate={{
-            x: activeIndex >= 0 ? `${(100 / navItems.length) * activeIndex}%` : '0%',
-            width: `${100 / navItems.length}%`,
-          }}
-          transition={{
-            type: "spring",
-            stiffness: 300,
-            damping: 30,
-            mass: 0.8,
-          }}
-          style={{
-            left: 0,
-          }}
-        />
+        {activeIndex >= 0 && (
+          <motion.div
+            className="absolute top-0 h-full bg-white/10 rounded-t-2xl pointer-events-none"
+            initial={false}
+            animate={{
+              x: `${(100 / navItems.length) * activeIndex}%`,
+              width: `${100 / navItems.length}%`,
+            }}
+            transition={{
+              type: "spring",
+              stiffness: 400,
+              damping: 35,
+            }}
+            style={{
+              left: 0,
+            }}
+          />
+        )}
         
         <div className="flex items-center justify-around h-16 sm:h-16 relative">
           {navItems.map((item, index) => {
@@ -66,31 +67,26 @@ const BottomNav = () => {
                 onMouseUp={() => setPressedButton(null)}
                 onMouseLeave={() => setPressedButton(null)}
               >
-                {/* Press highlight - shows when button is being pressed (only if not active) */}
-                {isPressed && !isActive && (
-                  <div className="absolute inset-0 bg-[rgb(38,38,38)] rounded-t-2xl opacity-100 pointer-events-none" />
+                {/* Press highlight - shows when button is being pressed */}
+                {isPressed && (
+                  <div className="absolute inset-0 bg-white/5 rounded-t-2xl pointer-events-none" />
                 )}
                 <motion.span
-                  className="text-xl sm:text-2xl mb-0.5 sm:mb-1 relative z-10 pointer-events-none"
+                  className="text-2xl sm:text-2xl mb-1 relative z-10 pointer-events-none"
                   animate={{ 
-                    scale: isActive ? 1.15 : 1,
-                    y: isActive ? -2 : 0,
+                    scale: isActive ? 1.1 : 1,
                   }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
                 >
                   {item.icon}
                 </motion.span>
-                <motion.span
+                <span
                   className={`text-[10px] sm:text-xs font-medium relative z-10 transition-colors pointer-events-none ${
-                    isActive ? "text-white font-semibold" : "text-white/50"
+                    isActive ? "text-white" : "text-white/40"
                   }`}
-                  animate={{
-                    opacity: isActive ? 1 : 0.5,
-                  }}
-                  transition={{ duration: 0.2 }}
                 >
                   {item.name}
-                </motion.span>
+                </span>
               </Link>
             );
           })}
