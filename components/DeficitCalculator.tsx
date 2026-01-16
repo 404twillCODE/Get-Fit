@@ -138,16 +138,9 @@ const DeficitCalculator = () => {
       setCurrentEntry(newEntry);
       calculateStats();
       
-      // Clear input fields
-      setNutritionData({
-        calories: 0,
-        fat: 0,
-        carbs: 0,
-        protein: 0,
-      });
-      setFitnessData({
-        totalCalories: 0,
-      });
+      // Reload today's data to show saved values in inputs
+      // Don't clear - keep the values visible so users can see what they entered
+      // The data will persist in the inputs since loadTodayData will populate them
       
       // Show success message
       setSaveMessage("✓ Data saved!");

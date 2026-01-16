@@ -33,6 +33,9 @@ const Dashboard = () => {
           eaten: todayEntry.caloriesEaten || 0,
           burned: todayEntry.caloriesBurned || 0,
         });
+      } else {
+        // Reset if no entry found
+        setTodayCalories({ eaten: 0, burned: 0 });
       }
 
       const todayIndex = new Date().getDay();
