@@ -23,6 +23,7 @@ const Insights = () => {
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set([new Date().toISOString().split("T")[0]]));
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [lastClickedDate, setLastClickedDate] = useState<string | null>(null);
   const [copyOptions, setCopyOptions] = useState({
     includeDate: true,
     includeNutrition: true,
@@ -132,11 +133,47 @@ const Insights = () => {
 
   const toggleDateSelection = (dateKey: string) => {
     const newSelected = new Set(selectedDates);
-    if (newSelected.has(dateKey)) {
-      newSelected.delete(dateKey);
+    
+    // If there's a last clicked date and we're clicking a different date, select range
+    if (lastClickedDate && lastClickedDate !== dateKey) {
+      const startDate = new Date(lastClickedDate);
+      const endDate = new Date(dateKey);
+      
+      // Swap if end is before start
+      if (endDate < startDate) {
+        const temp = startDate;
+        startDate.setTime(endDate.getTime());
+        endDate.setTime(temp.getTime());
+      }
+      
+      // Select all dates in the range
+      const currentDate = new Date(startDate);
+      while (currentDate <= endDate) {
+        const dateKeyToAdd = currentDate.toISOString().split("T")[0];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const dateToCheck = new Date(currentDate);
+        dateToCheck.setHours(0, 0, 0, 0);
+        
+        // Only add if it's in the past or today
+        if (dateToCheck <= today) {
+          newSelected.add(dateKeyToAdd);
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      setLastClickedDate(dateKey);
     } else {
-      newSelected.add(dateKey);
+      // Toggle single date selection
+      if (newSelected.has(dateKey)) {
+        newSelected.delete(dateKey);
+        setLastClickedDate(null);
+      } else {
+        newSelected.add(dateKey);
+        setLastClickedDate(dateKey);
+      }
     }
+    
     setSelectedDates(newSelected);
   };
 
@@ -415,7 +452,13 @@ const Insights = () => {
             )}
           </div>
           <button
-            onClick={() => setShowCopyModal(true)}
+            onClick={() => {
+              // Reset to today's date when opening modal
+              const todayKey = new Date().toISOString().split("T")[0];
+              setSelectedDates(new Set([todayKey]));
+              setLastClickedDate(todayKey);
+              setShowCopyModal(true);
+            }}
             className="w-full py-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors text-sm mb-3"
           >
             📋 Copy Log
