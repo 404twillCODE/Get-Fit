@@ -468,7 +468,7 @@ const Insights = () => {
             >
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#0a0a0a] rounded-3xl p-6 lg:p-8 border border-white/20 max-w-md sm:max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto mx-auto"
+                className="bg-[#0a0a0a] rounded-3xl p-6 lg:p-8 border border-white/20 max-w-md sm:max-w-lg w-full shadow-2xl max-h-[85vh] overflow-y-auto mx-auto my-auto"
               >
                 <div className="text-center mb-6">
                   <div className="text-2xl mb-2">📋</div>
