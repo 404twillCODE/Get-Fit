@@ -84,8 +84,28 @@ const Dashboard = () => {
     };
 
     loadDashboardData();
+    
+    // Refresh when page becomes visible (user navigates back from other pages)
+    const handleVisibilityChange = () => {
+      if (!document.hidden && isMounted) {
+        loadDashboardData();
+      }
+    };
+    
+    // Also refresh on focus (when user switches back to tab)
+    const handleFocus = () => {
+      if (isMounted) {
+        loadDashboardData();
+      }
+    };
+    
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+    
     return () => {
       isMounted = false;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
     };
   }, []);
 

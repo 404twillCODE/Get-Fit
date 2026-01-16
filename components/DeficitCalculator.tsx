@@ -138,9 +138,9 @@ const DeficitCalculator = () => {
       setCurrentEntry(newEntry);
       calculateStats();
       
-      // Reload today's data to show saved values in inputs
-      // Don't clear - keep the values visible so users can see what they entered
-      // The data will persist in the inputs since loadTodayData will populate them
+      // Reload today's data to show saved values in inputs (don't clear them)
+      // This ensures the input fields display what was just saved
+      loadTodayData();
       
       // Show success message
       setSaveMessage("✓ Data saved!");
