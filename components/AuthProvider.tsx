@@ -276,6 +276,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const continueAsGuest = () => {
     localStorage.setItem(GUEST_MODE_KEY, "true");
     setIsGuest(true);
+    
+    // Check if guest mode has no data and needs profile setup
+    if (typeof window !== "undefined") {
+      const localData = getLocalData();
+      const hasNoData = 
+        localData.deficitEntries.length === 0 &&
+        localData.workoutHistory.length === 0 &&
+        !localData.savedWorkouts.some((day: unknown[]) => Array.isArray(day) && day.length > 0) &&
+        localData.workoutSchedule.every(day => day === "Rest Day");
+      
+      const guestProfileComplete = localStorage.getItem("guestProfileSetupComplete") === "true";
+      
+      if (hasNoData && !guestProfileComplete) {
+        setShowProfileSetup(true);
+      }
+    }
   };
 
   const logoutGuest = () => {
