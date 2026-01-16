@@ -20,6 +20,7 @@ type AuthContextValue = {
   updatePassword: (newPassword: string) => Promise<string | null>;
   inviteUser: (email: string) => Promise<string | null>;
   signOut: () => Promise<void>;
+  logoutGuest: () => void;
   continueAsGuest: () => void;
   completeProfileSetup: () => void;
 };
@@ -259,6 +260,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsGuest(true);
   };
 
+  const logoutGuest = () => {
+    localStorage.removeItem(GUEST_MODE_KEY);
+    setIsGuest(false);
+    // Clear all local data when logging out of guest mode
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("deficitEntries");
+      localStorage.removeItem("savedWorkouts");
+      localStorage.removeItem("workoutHistory");
+      localStorage.removeItem("workoutSchedule");
+    }
+  };
+
   const completeProfileSetup = () => {
     setShowProfileSetup(false);
   };
@@ -279,6 +292,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       updatePassword,
       inviteUser,
       signOut,
+      logoutGuest,
       continueAsGuest,
       completeProfileSetup,
     }),

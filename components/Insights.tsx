@@ -24,7 +24,7 @@ const Insights = () => {
   const [schedule, setSchedule] = useState<string[]>([]);
   const [savedWorkouts, setSavedWorkouts] = useState<unknown[][]>([]);
   const [syncStatus, setSyncStatus] = useState("");
-  const { user, isGuest, signOut } = useAuth();
+  const { user, isGuest, signOut, logoutGuest } = useAuth();
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set([formatDateKey(new Date())]));
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -543,6 +543,14 @@ const Insights = () => {
                 className="text-white/70 hover:text-white"
               >
                 Sign Out
+              </button>
+            )}
+            {isGuest && (
+              <button
+                onClick={logoutGuest}
+                className="text-white/70 hover:text-white"
+              >
+                Exit Guest Mode
               </button>
             )}
           </div>
