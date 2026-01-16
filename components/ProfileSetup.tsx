@@ -4,16 +4,11 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/components/AuthProvider";
 import { getSupabaseClient } from "@/lib/supabaseClient";
+import { updateAppData, loadAppData } from "@/lib/dataStore";
+import { type UserProfile } from "@/lib/storage";
 
-export type UserProfile = {
-  name?: string;
-  age?: number;
-  height?: number; // in inches or cm
-  currentWeight?: number;
-  goalWeight?: number;
-  activityLevel?: "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extremely_active";
-  fitnessGoal?: "lose_weight" | "maintain_weight" | "gain_weight" | "build_muscle" | "improve_endurance";
-};
+// Re-export for backward compatibility
+export type { UserProfile };
 
 const ProfileSetup = ({ 
   onComplete, 
@@ -51,62 +46,54 @@ const ProfileSetup = ({
     
     try {
       if (user) {
-        // Save to Supabase user metadata for authenticated users
-        const supabase = getSupabaseClient();
-        if (!supabase) {
-          setError("Unable to save profile.");
-          setIsSaving(false);
-          return;
-        }
-
-        console.log("Saving profile to Supabase:", profile);
+        // Save to user_data table via dataStore (uses existing SQL setup)
+        console.log("Saving profile to Supabase user_data table:", profile);
         
-        // Make the update request with error handling
-        const updateResult = await supabase.auth.updateUser({
-          data: {
+        try {
+          // Load current app data
+          const currentData = await loadAppData();
+          
+          // Update with profile data
+          const updatedData = {
+            ...currentData,
             profile: profile,
             profileSetupComplete: true,
-          },
-        });
-
-        const { data, error: updateError } = updateResult;
-
-        console.log("Update result:", { data, error: updateError });
-
-        if (updateError) {
-          console.error("Supabase update error:", updateError);
-          // If it's an abort error, try once more
-          if (updateError.message?.toLowerCase().includes("abort") || updateError.name === "AbortError") {
-            console.log("Abort error detected, retrying once...");
-            await new Promise(resolve => setTimeout(resolve, 500)); // Small delay before retry
-            
-            const retryResult = await supabase.auth.updateUser({
+          };
+          
+          // Save to Supabase user_data table
+          const success = await updateAppData(() => updatedData);
+          
+          if (!success) {
+            console.warn("Failed to save to Supabase, but saved locally");
+            // Still consider it a success since it's saved locally
+          }
+          
+          // Also try to save to user_metadata as a backup (non-blocking)
+          const supabase = getSupabaseClient();
+          if (supabase) {
+            supabase.auth.updateUser({
               data: {
                 profile: profile,
                 profileSetupComplete: true,
               },
+            }).catch((err) => {
+              console.warn("Failed to update user_metadata (non-critical):", err);
+              // This is just a backup, so we don't fail if it errors
             });
-            
-            if (retryResult.error) {
-              setError("Connection issue. Please try again.");
-              setIsSaving(false);
-              return;
-            }
-            // Retry succeeded, continue to success
-          } else {
-            setError(updateError.message || "Failed to save profile.");
-            setIsSaving(false);
-            return;
           }
+          
+          console.log("Profile saved successfully");
+          // Success - show success message briefly, then close
+          setSuccess(true);
+          setIsSaving(false);
+          setTimeout(() => {
+            onComplete();
+          }, 1000);
+        } catch (err) {
+          console.error("Error saving profile to dataStore:", err);
+          setError("Failed to save profile. Please try again.");
+          setIsSaving(false);
         }
-        
-        console.log("Profile saved successfully");
-        // Success - show success message briefly, then close
-        setSuccess(true);
-        setIsSaving(false);
-        setTimeout(() => {
-          onComplete();
-        }, 1000);
       } else {
         // Save to localStorage for guest users
         try {

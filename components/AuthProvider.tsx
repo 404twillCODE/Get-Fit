@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabaseClient";
-import { ensureUserData, startPeriodicSync, retryFailedSyncs } from "@/lib/dataStore";
+import { ensureUserData, startPeriodicSync, retryFailedSyncs, loadAppData } from "@/lib/dataStore";
 import { getLocalData } from "@/lib/storage";
 
 type AuthContextValue = {
@@ -93,7 +93,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                   localStorage.removeItem(GUEST_MODE_KEY);
                 }
                 // Check if profile setup is needed
-                const profileSetupComplete = data.session.user.user_metadata?.profileSetupComplete;
+                // Check user_data table first, then fallback to user_metadata
+                let profileSetupComplete = false;
+                try {
+                  const appData = await loadAppData();
+                  profileSetupComplete = appData.profileSetupComplete === true;
+                } catch (err) {
+                  console.warn("Error checking profile setup:", err);
+                }
+                
+                if (!profileSetupComplete) {
+                  // Also check user_metadata as fallback
+                  profileSetupComplete = data.session.user.user_metadata?.profileSetupComplete === true;
+                }
+                
                 if (!profileSetupComplete) {
                   setShowProfileSetup(true);
                 }
@@ -123,7 +136,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                   localStorage.removeItem(GUEST_MODE_KEY);
                 }
                 // Check if profile setup is needed
-                const profileSetupComplete = newSession.user.user_metadata?.profileSetupComplete;
+                // Check user_data table first, then fallback to user_metadata
+                let profileSetupComplete = false;
+                try {
+                  const appData = await loadAppData();
+                  profileSetupComplete = appData.profileSetupComplete === true;
+                } catch (err) {
+                  console.warn("Error checking profile setup:", err);
+                }
+                
+                if (!profileSetupComplete) {
+                  // Also check user_metadata as fallback
+                  profileSetupComplete = newSession.user.user_metadata?.profileSetupComplete === true;
+                }
+                
                 if (!profileSetupComplete) {
                   setShowProfileSetup(true);
                 }

@@ -36,12 +36,24 @@ export type WeightEntry = {
   timestamp: number;
 };
 
+export type UserProfile = {
+  name?: string;
+  age?: number;
+  height?: number; // in inches or cm
+  currentWeight?: number;
+  goalWeight?: number;
+  activityLevel?: "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extremely_active";
+  fitnessGoal?: "lose_weight" | "maintain_weight" | "gain_weight" | "build_muscle" | "improve_endurance";
+};
+
 export type AppData = {
   deficitEntries: DeficitEntry[];
   savedWorkouts: unknown[][];
   workoutHistory: WorkoutHistoryEntry[];
   workoutSchedule: string[];
   weightHistory: WeightEntry[];
+  profile?: UserProfile;
+  profileSetupComplete?: boolean;
 };
 
 export const STORAGE_KEYS = [
@@ -67,11 +79,13 @@ export const getDefaultData = (): AppData => ({
   workoutHistory: [],
   workoutSchedule: Array(7).fill("Rest Day"),
   weightHistory: [],
+  profile: undefined,
+  profileSetupComplete: false,
 });
 
 export const getLocalData = (): AppData => {
   const fallback = getDefaultData();
-  return {
+  const data = {
     deficitEntries: safeJsonParse<DeficitEntry[]>(
       localStorage.getItem("deficitEntries"),
       fallback.deficitEntries
@@ -93,6 +107,19 @@ export const getLocalData = (): AppData => {
       fallback.weightHistory
     ),
   };
+  
+  // Load profile from localStorage if it exists (for guest users)
+  const guestProfile = localStorage.getItem("guestProfile");
+  if (guestProfile) {
+    try {
+      data.profile = JSON.parse(guestProfile);
+      data.profileSetupComplete = localStorage.getItem("guestProfileSetupComplete") === "true";
+    } catch {
+      // Ignore parse errors
+    }
+  }
+  
+  return data;
 };
 
 export const setLocalData = (data: AppData) => {
