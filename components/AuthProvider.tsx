@@ -10,10 +10,12 @@ type AuthContextValue = {
   user: User | null;
   loading: boolean;
   isGuest: boolean;
+  showProfileSetup: boolean;
   signIn: (email: string, password: string) => Promise<string | null>;
   signUp: (email: string, password: string) => Promise<string | null>;
   signOut: () => Promise<void>;
   continueAsGuest: () => void;
+  completeProfileSetup: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -24,6 +26,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isGuest, setIsGuest] = useState(false);
+  const [showProfileSetup, setShowProfileSetup] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -64,6 +67,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 if (typeof window !== "undefined") {
                   localStorage.removeItem(GUEST_MODE_KEY);
                 }
+                // Check if profile setup is needed
+                const profileSetupComplete = data.session.user.user_metadata?.profileSetupComplete;
+                if (!profileSetupComplete) {
+                  setShowProfileSetup(true);
+                }
                 try {
                   await ensureUserData();
                   // Retry any failed syncs when user logs in
@@ -88,6 +96,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 setIsGuest(false);
                 if (typeof window !== "undefined") {
                   localStorage.removeItem(GUEST_MODE_KEY);
+                }
+                // Check if profile setup is needed
+                const profileSetupComplete = newSession.user.user_metadata?.profileSetupComplete;
+                if (!profileSetupComplete) {
+                  setShowProfileSetup(true);
                 }
                 try {
                   await ensureUserData();
@@ -158,18 +171,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsGuest(true);
   };
 
+  const completeProfileSetup = () => {
+    setShowProfileSetup(false);
+  };
+
   const value = useMemo<AuthContextValue>(
     () => ({
       session,
       user: session?.user ?? null,
       loading,
       isGuest,
+      showProfileSetup,
       signIn,
       signUp,
       signOut,
       continueAsGuest,
+      completeProfileSetup,
     }),
-    [session, loading, isGuest]
+    [session, loading, isGuest, showProfileSetup]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

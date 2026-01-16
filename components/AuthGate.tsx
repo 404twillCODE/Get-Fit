@@ -2,9 +2,10 @@
 
 import { useAuth } from "@/components/AuthProvider";
 import AuthScreen from "@/components/AuthScreen";
+import ProfileSetup from "@/components/ProfileSetup";
 
 const AuthGate = ({ children }: { children: React.ReactNode }) => {
-  const { session, loading, isGuest } = useAuth();
+  const { session, loading, isGuest, showProfileSetup, completeProfileSetup } = useAuth();
 
   if (loading) {
     return (
@@ -18,7 +19,12 @@ const AuthGate = ({ children }: { children: React.ReactNode }) => {
     return <AuthScreen />;
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {showProfileSetup && <ProfileSetup onComplete={completeProfileSetup} />}
+      {children}
+    </>
+  );
 };
 
 export default AuthGate;

@@ -14,6 +14,8 @@ import {
   loadAppData,
   updateAppData,
 } from "@/lib/dataStore";
+import { getSupabaseClient } from "@/lib/supabaseClient";
+import ProfileSetup, { type UserProfile } from "@/components/ProfileSetup";
 
 const Insights = () => {
   const [entries, setEntries] = useState<DeficitEntry[]>([]);
@@ -48,6 +50,8 @@ const Insights = () => {
   const [selectedDatesToDelete, setSelectedDatesToDelete] = useState<Set<string>>(new Set());
   const [selectedWorkoutDaysToDelete, setSelectedWorkoutDaysToDelete] = useState<Set<number>>(new Set());
   const [selectedWorkoutHistoryToDelete, setSelectedWorkoutHistoryToDelete] = useState<Set<number>>(new Set());
+  const [showProfileEdit, setShowProfileEdit] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   const loadData = async () => {
     const data = await loadAppData();
@@ -59,7 +63,19 @@ const Insights = () => {
 
   useEffect(() => {
     loadData();
+    loadUserProfile();
   }, []);
+
+  const loadUserProfile = async () => {
+    if (!user) return;
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+    
+    const profile = user.user_metadata?.profile as UserProfile | undefined;
+    if (profile) {
+      setUserProfile(profile);
+    }
+  };
 
   // When modal opens, ensure today's date is selected and set as last clicked
   useEffect(() => {
@@ -528,6 +544,14 @@ const Insights = () => {
               </button>
             )}
           </div>
+          {user && (
+            <button
+              onClick={() => setShowProfileEdit(true)}
+              className="w-full py-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors text-sm mb-3"
+            >
+              {userProfile ? "✏️ Edit Profile" : "👤 Set Up Profile"}
+            </button>
+          )}
           <button
             onClick={() => {
               // Reset to today's date when opening modal
@@ -1102,6 +1126,19 @@ const Insights = () => {
               </div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* Profile Edit Modal */}
+      <AnimatePresence>
+        {showProfileEdit && (
+          <ProfileSetup
+            initialProfile={userProfile}
+            onComplete={() => {
+              setShowProfileEdit(false);
+              loadUserProfile();
+            }}
+          />
         )}
       </AnimatePresence>
     </div>

@@ -10,11 +10,25 @@ const AuthScreen = () => {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [status, setStatus] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async () => {
     setStatus("");
+    
+    // Validate password confirmation for sign up
+    if (mode === "signup") {
+      if (password !== confirmPassword) {
+        setStatus("Passwords do not match.");
+        return;
+      }
+      if (password.length < 6) {
+        setStatus("Password must be at least 6 characters.");
+        return;
+      }
+    }
+    
     setIsLoading(true);
     const errorMessage =
       mode === "signin"
@@ -25,6 +39,8 @@ const AuthScreen = () => {
     } else if (mode === "signup") {
       setStatus("Account created. You can now sign in.");
       setMode("signin");
+      setPassword("");
+      setConfirmPassword("");
     }
     setIsLoading(false);
   };
@@ -87,6 +103,15 @@ const AuthScreen = () => {
             onChange={(event) => setPassword(event.target.value)}
             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm"
           />
+          {mode === "signup" && (
+            <input
+              type="password"
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm"
+            />
+          )}
         </div>
 
         {status && <div className="mt-3 text-xs text-white/70">{status}</div>}
