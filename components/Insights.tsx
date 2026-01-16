@@ -273,7 +273,7 @@ const Insights = () => {
     : "No workouts yet";
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-[#0a0a0a]">
+    <div className="max-w-md lg:max-w-2xl xl:max-w-4xl mx-auto min-h-screen bg-[#0a0a0a]">
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}

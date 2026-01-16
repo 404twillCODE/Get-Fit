@@ -89,7 +89,7 @@ const Dashboard = () => {
   const deficit = todayCalories.eaten - todayCalories.burned;
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-[#0a0a0a]">
+    <div className="max-w-md lg:max-w-2xl xl:max-w-4xl mx-auto min-h-screen bg-[#0a0a0a]">
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
@@ -166,7 +166,7 @@ const Dashboard = () => {
 
 
       {/* Quick Actions */}
-      <div className="px-4 sm:px-6 space-y-3 sm:space-y-4 mb-6">
+      <div className="px-4 sm:px-6 lg:px-8 space-y-3 sm:space-y-4 lg:grid lg:grid-cols-3 lg:gap-4 lg:space-y-0 mb-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
