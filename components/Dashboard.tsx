@@ -89,17 +89,17 @@ const Dashboard = () => {
   const deficit = todayCalories.eaten - todayCalories.burned;
 
   return (
-    <div className="max-w-md lg:max-w-2xl xl:max-w-4xl mx-auto min-h-screen bg-[#0a0a0a]">
+    <div className="max-w-md lg:max-w-7xl mx-auto min-h-screen bg-[#0a0a0a]">
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="pt-12 pb-6 sm:pb-8 px-4 sm:px-6"
+        className="pt-12 pb-6 sm:pb-8 px-4 sm:px-6 lg:px-8"
       >
-        <h1 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-white via-white to-white/80 bg-clip-text text-transparent">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-2 bg-gradient-to-r from-white via-white to-white/80 bg-clip-text text-transparent">
           Get Fit
         </h1>
-        <p className="text-white/60 text-xs sm:text-sm">
+        <p className="text-white/60 text-xs sm:text-sm lg:text-base">
           {new Date().toLocaleDateString("en-US", {
             weekday: "long",
             month: "long",
@@ -108,47 +108,46 @@ const Dashboard = () => {
         </p>
       </motion.header>
 
-      {/* Quick Stats */}
-      <div className="px-4 sm:px-6 mb-4 sm:mb-6">
+      {/* Desktop Layout: Stats and Insights Side by Side */}
+      <div className="px-4 sm:px-6 lg:px-8 mb-4 sm:mb-6 lg:grid lg:grid-cols-2 lg:gap-6">
+        {/* Quick Stats */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-gradient-to-br from-white/5 to-white/0 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-white/10"
+          className="bg-gradient-to-br from-white/5 to-white/0 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 border border-white/10 mb-4 lg:mb-0"
         >
-          <div className="text-white/60 text-xs sm:text-sm mb-2">Today&apos;s Deficit</div>
+          <div className="text-white/60 text-xs sm:text-sm lg:text-base mb-2">Today&apos;s Deficit</div>
           <div
-            className={`text-3xl sm:text-4xl font-bold ${
+            className={`text-3xl sm:text-4xl lg:text-5xl font-bold ${
               deficit <= 0 ? "text-green-400" : "text-red-400"
             }`}
           >
             {deficit >= 0 ? "+" : ""}
             {Math.round(deficit).toLocaleString()}
           </div>
-          <div className="text-white/40 text-xs mt-2">
+          <div className="text-white/40 text-xs sm:text-sm mt-2">
             {todayCalories.burned} burned - {todayCalories.eaten} eaten
           </div>
         </motion.div>
-      </div>
 
-      {/* Insights */}
-      <div className="px-4 sm:px-6 mb-4 sm:mb-6">
+        {/* Insights */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12 }}
-          className="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10"
+          className="bg-white/5 rounded-2xl p-4 sm:p-5 lg:p-6 border border-white/10"
         >
-          <div className="text-white/60 text-xs sm:text-sm mb-3 sm:mb-4">Insights</div>
-          <div className="grid grid-cols-3 gap-2 sm:gap-3 text-center">
-            <div className="rounded-xl bg-white/5 py-2 sm:py-3 px-1 sm:px-2 border border-white/10">
-              <div className="text-xs text-white/50 mb-1">Streak</div>
-              <div className="text-base sm:text-lg font-semibold">{insights.streak} days</div>
+          <div className="text-white/60 text-xs sm:text-sm lg:text-base mb-3 sm:mb-4">Insights</div>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4 text-center">
+            <div className="rounded-xl bg-white/5 py-2 sm:py-3 lg:py-4 px-1 sm:px-2 lg:px-3 border border-white/10">
+              <div className="text-xs sm:text-sm text-white/50 mb-1">Streak</div>
+              <div className="text-base sm:text-lg lg:text-xl font-semibold">{insights.streak} days</div>
             </div>
-            <div className="rounded-xl bg-white/5 py-2 sm:py-3 px-1 sm:px-2 border border-white/10">
-              <div className="text-xs text-white/50 mb-1">7-Day Avg</div>
+            <div className="rounded-xl bg-white/5 py-2 sm:py-3 lg:py-4 px-1 sm:px-2 lg:px-3 border border-white/10">
+              <div className="text-xs sm:text-sm text-white/50 mb-1">7-Day Avg</div>
               <div
-                className={`text-base sm:text-lg font-semibold ${
+                className={`text-base sm:text-lg lg:text-xl font-semibold ${
                   insights.weeklyAverage >= 0 ? "text-green-400" : "text-red-400"
                 }`}
               >
@@ -156,9 +155,9 @@ const Dashboard = () => {
                 {insights.weeklyAverage}
               </div>
             </div>
-            <div className="rounded-xl bg-white/5 py-2 sm:py-3 px-1 sm:px-2 border border-white/10">
-              <div className="text-xs text-white/50 mb-1">Days Logged</div>
-              <div className="text-base sm:text-lg font-semibold">{insights.totalLoggedDays}</div>
+            <div className="rounded-xl bg-white/5 py-2 sm:py-3 lg:py-4 px-1 sm:px-2 lg:px-3 border border-white/10">
+              <div className="text-xs sm:text-sm text-white/50 mb-1">Days Logged</div>
+              <div className="text-base sm:text-lg lg:text-xl font-semibold">{insights.totalLoggedDays}</div>
             </div>
           </div>
         </motion.div>
@@ -166,7 +165,7 @@ const Dashboard = () => {
 
 
       {/* Quick Actions */}
-      <div className="px-4 sm:px-6 lg:px-8 space-y-3 sm:space-y-4 lg:grid lg:grid-cols-3 lg:gap-4 lg:space-y-0 mb-6">
+      <div className="px-4 sm:px-6 lg:px-8 space-y-3 sm:space-y-4 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0 mb-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

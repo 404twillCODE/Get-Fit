@@ -214,14 +214,14 @@ const DeficitCalculator = () => {
   const canGoNext = formatDateKey(currentDate) < formatDateKey(new Date());
 
   return (
-    <div className="max-w-md lg:max-w-2xl xl:max-w-4xl mx-auto min-h-screen bg-[#0a0a0a]">
+    <div className="max-w-md lg:max-w-7xl mx-auto min-h-screen bg-[#0a0a0a]">
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="pt-12 pb-6 px-6"
+        className="pt-12 pb-6 px-4 sm:px-6 lg:px-8"
       >
-        <h1 className="text-3xl font-bold mb-6">Deficit Calculator</h1>
+        <h1 className="text-3xl lg:text-4xl font-bold mb-6">Deficit Calculator</h1>
 
         {/* Date Navigation */}
         <div className="flex items-center justify-between mb-6">
@@ -261,34 +261,34 @@ const DeficitCalculator = () => {
         )}
       </motion.header>
 
-      {/* Data Entry Section */}
-      <div className="px-6 mb-6 space-y-4">
+      {/* Data Entry Section - Desktop: Side by Side */}
+      <div className="px-4 sm:px-6 lg:px-8 mb-6 space-y-4 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0">
         {/* Nutrition Data */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/5 rounded-2xl p-5 border border-white/10"
+          className="bg-white/5 rounded-2xl p-5 lg:p-6 border border-white/10"
         >
-          <div className="text-white/60 text-sm mb-4">🍎 Nutrition Data</div>
+          <div className="text-white/60 text-sm lg:text-base mb-4">🍎 Nutrition Data</div>
           
           {/* Calories - Main Focus */}
           <div className="mb-4">
-            <label className="text-white text-sm font-medium mb-2 block">Calories</label>
+            <label className="text-white text-sm lg:text-base font-medium mb-2 block">Calories</label>
             <input
               type="number"
               value={nutritionData.calories || ""}
               onChange={(e) =>
                 setNutritionData({ ...nutritionData, calories: parseInt(e.target.value) || 0 })
               }
-              className="w-full px-4 py-3 bg-white/10 border-2 border-white/20 rounded-xl text-white text-lg font-semibold focus:border-white/40 focus:outline-none transition-colors"
+              className="w-full px-4 py-3 lg:py-4 bg-white/10 border-2 border-white/20 rounded-xl text-white text-lg lg:text-xl font-semibold focus:border-white/40 focus:outline-none transition-colors"
               placeholder="Enter calories"
             />
           </div>
 
           {/* Carbs, Protein, Fat - Secondary/Optional */}
-          <div className="grid grid-cols-3 gap-2 opacity-60">
+          <div className="grid grid-cols-3 gap-2 lg:gap-3 opacity-60">
             <div>
-              <label className="text-white/40 text-xs mb-1 block">Carbs (g)</label>
+              <label className="text-white/40 text-xs lg:text-sm mb-1 block">Carbs (g)</label>
               <input
                 type="number"
                 step="0.1"
@@ -296,12 +296,12 @@ const DeficitCalculator = () => {
                 onChange={(e) =>
                   setNutritionData({ ...nutritionData, carbs: parseFloat(e.target.value) || 0 })
                 }
-                className="w-full px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white/80 text-xs focus:border-white/20 focus:outline-none transition-colors"
+                className="w-full px-2 py-1.5 lg:py-2 bg-white/5 border border-white/10 rounded-lg text-white/80 text-xs lg:text-sm focus:border-white/20 focus:outline-none transition-colors"
                 placeholder="Carbs"
               />
             </div>
             <div>
-              <label className="text-white/40 text-xs mb-1 block">Protein (g)</label>
+              <label className="text-white/40 text-xs lg:text-sm mb-1 block">Protein (g)</label>
               <input
                 type="number"
                 step="0.1"
@@ -309,12 +309,12 @@ const DeficitCalculator = () => {
                 onChange={(e) =>
                   setNutritionData({ ...nutritionData, protein: parseFloat(e.target.value) || 0 })
                 }
-                className="w-full px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white/80 text-xs focus:border-white/20 focus:outline-none transition-colors"
+                className="w-full px-2 py-1.5 lg:py-2 bg-white/5 border border-white/10 rounded-lg text-white/80 text-xs lg:text-sm focus:border-white/20 focus:outline-none transition-colors"
                 placeholder="Protein"
               />
             </div>
             <div>
-              <label className="text-white/40 text-xs mb-1 block">Fat (g)</label>
+              <label className="text-white/40 text-xs lg:text-sm mb-1 block">Fat (g)</label>
               <input
                 type="number"
                 step="0.1"
@@ -322,7 +322,7 @@ const DeficitCalculator = () => {
                 onChange={(e) =>
                   setNutritionData({ ...nutritionData, fat: parseFloat(e.target.value) || 0 })
                 }
-                className="w-full px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white/80 text-xs focus:border-white/20 focus:outline-none transition-colors"
+                className="w-full px-2 py-1.5 lg:py-2 bg-white/5 border border-white/10 rounded-lg text-white/80 text-xs lg:text-sm focus:border-white/20 focus:outline-none transition-colors"
                 placeholder="Fat"
               />
             </div>
@@ -334,16 +334,16 @@ const DeficitCalculator = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white/5 rounded-2xl p-5 border border-white/10"
+          className="bg-white/5 rounded-2xl p-5 lg:p-6 border border-white/10"
         >
-          <div className="text-white/60 text-sm mb-3">⌚ Fitness Tracker</div>
+          <div className="text-white/60 text-sm lg:text-base mb-3 lg:mb-4">⌚ Fitness Tracker</div>
           <input
             type="number"
             value={fitnessData.totalCalories || ""}
             onChange={(e) =>
               setFitnessData({ ...fitnessData, totalCalories: parseInt(e.target.value) || 0 })
             }
-            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white text-base focus:border-white/40 focus:outline-none transition-colors"
+            className="w-full px-4 py-3 lg:py-4 bg-white/10 border border-white/20 rounded-xl text-white text-base lg:text-lg focus:border-white/40 focus:outline-none transition-colors"
             placeholder="Enter total calories burned"
           />
         </motion.div>
@@ -351,7 +351,7 @@ const DeficitCalculator = () => {
 
       {/* Current Data Display */}
       {(nutritionData.calories > 0 || fitnessData.totalCalories > 0) && (
-        <div className="px-6 mb-6 space-y-4">
+        <div className="px-4 sm:px-6 lg:px-8 mb-6 space-y-4 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0">
           {nutritionData.calories > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}

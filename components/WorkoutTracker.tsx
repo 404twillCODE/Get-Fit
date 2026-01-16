@@ -133,14 +133,14 @@ const WorkoutTracker = () => {
   };
 
   return (
-    <div className="max-w-md lg:max-w-2xl xl:max-w-4xl mx-auto min-h-screen bg-[#0a0a0a]">
+    <div className="max-w-md lg:max-w-7xl mx-auto min-h-screen bg-[#0a0a0a]">
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="pt-12 pb-6 px-6"
+        className="pt-12 pb-6 px-4 sm:px-6 lg:px-8"
       >
-        <h1 className="text-3xl font-bold mb-4">Workout Tracker</h1>
+        <h1 className="text-3xl lg:text-4xl font-bold mb-4">Workout Tracker</h1>
 
         {/* Day Selector */}
         <div className="mb-6">
@@ -168,7 +168,7 @@ const WorkoutTracker = () => {
       </motion.header>
 
       {/* Add Exercise Button */}
-      <div className="px-6 mb-6">
+      <div className="px-4 sm:px-6 lg:px-8 mb-6">
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
@@ -176,14 +176,14 @@ const WorkoutTracker = () => {
             setEditingExercise(null);
             setShowModal(true);
           }}
-          className="w-full py-4 bg-white text-[#0a0a0a] rounded-2xl font-semibold text-lg"
+          className="w-full lg:w-auto lg:px-8 py-4 bg-white text-[#0a0a0a] rounded-2xl font-semibold text-lg"
         >
           + Add Exercise
         </motion.button>
       </div>
 
       {/* Exercise List */}
-      <div className="px-6 mb-6 space-y-4">
+      <div className="px-4 sm:px-6 lg:px-8 mb-6 space-y-4 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0">
         <AnimatePresence>
           {workouts.map((exercise) => (
             <motion.div

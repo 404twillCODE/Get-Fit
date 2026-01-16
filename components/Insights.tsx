@@ -273,34 +273,35 @@ const Insights = () => {
     : "No workouts yet";
 
   return (
-    <div className="max-w-md lg:max-w-2xl xl:max-w-4xl mx-auto min-h-screen bg-[#0a0a0a]">
+    <div className="max-w-md lg:max-w-7xl mx-auto min-h-screen bg-[#0a0a0a]">
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="pt-12 pb-6 px-6"
+        className="pt-12 pb-6 px-4 sm:px-6 lg:px-8"
       >
-        <h1 className="text-3xl font-bold mb-2">Insights & Data</h1>
-        <p className="text-white/60 text-sm">
+        <h1 className="text-3xl lg:text-4xl font-bold mb-2">Insights & Data</h1>
+        <p className="text-white/60 text-sm lg:text-base">
           Track streaks, trends, and manage your data.
         </p>
       </motion.header>
 
-      <div className="px-6 mb-6">
+      {/* Desktop: Stats and Time Periods Side by Side */}
+      <div className="px-4 sm:px-6 lg:px-8 mb-6 lg:grid lg:grid-cols-2 lg:gap-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/5 rounded-2xl p-5 border border-white/10"
+          className="bg-white/5 rounded-2xl p-5 lg:p-6 border border-white/10 mb-6 lg:mb-0"
         >
-          <div className="text-white/60 text-sm mb-4">Daily Momentum</div>
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="rounded-xl bg-white/5 py-3 px-2 border border-white/10">
-              <div className="text-xs text-white/50 mb-1">Streak</div>
-              <div className="text-lg font-semibold">{stats.streak} days</div>
+          <div className="text-white/60 text-sm lg:text-base mb-4">Daily Momentum</div>
+          <div className="grid grid-cols-3 gap-3 lg:gap-4 text-center">
+            <div className="rounded-xl bg-white/5 py-3 lg:py-4 px-2 lg:px-3 border border-white/10">
+              <div className="text-xs lg:text-sm text-white/50 mb-1">Streak</div>
+              <div className="text-lg lg:text-xl font-semibold">{stats.streak} days</div>
             </div>
-            <div className="rounded-xl bg-white/5 py-3 px-2 border border-white/10">
-              <div className="text-xs text-white/50 mb-1">7-Day Avg</div>
+            <div className="rounded-xl bg-white/5 py-3 lg:py-4 px-2 lg:px-3 border border-white/10">
+              <div className="text-xs lg:text-sm text-white/50 mb-1">7-Day Avg</div>
               <div
-                className={`text-lg font-semibold ${
+                className={`text-lg lg:text-xl font-semibold ${
                   stats.weeklyAverage < 0 ? "text-green-400" : "text-red-400"
                 }`}
               >
@@ -308,22 +309,21 @@ const Insights = () => {
                 {stats.weeklyAverage}
               </div>
             </div>
-            <div className="rounded-xl bg-white/5 py-3 px-2 border border-white/10">
-              <div className="text-xs text-white/50 mb-1">Days Logged</div>
-              <div className="text-lg font-semibold">{stats.totalLoggedDays}</div>
+            <div className="rounded-xl bg-white/5 py-3 lg:py-4 px-2 lg:px-3 border border-white/10">
+              <div className="text-xs lg:text-sm text-white/50 mb-1">Days Logged</div>
+              <div className="text-lg lg:text-xl font-semibold">{stats.totalLoggedDays}</div>
             </div>
           </div>
         </motion.div>
-      </div>
 
-      <div className="px-6 mb-6">
+      <div className="mb-6 lg:mb-0">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white/5 rounded-2xl p-5 border border-white/10"
+          className="bg-white/5 rounded-2xl p-5 lg:p-6 border border-white/10"
         >
-          <div className="text-white/60 text-sm mb-4">Weight Loss Estimate</div>
+          <div className="text-white/60 text-sm lg:text-base mb-4">Weight Loss Estimate</div>
           <div className="space-y-3 text-sm text-white/80">
             {stats.approximateWeightLoss > 0 ? (
               <div className="flex items-center justify-between">
@@ -362,16 +362,18 @@ const Insights = () => {
           </div>
         </motion.div>
       </div>
+      </div>
 
-      <div className="px-6 mb-6">
+      {/* Desktop: Time Periods and Workout Trends Side by Side */}
+      <div className="px-4 sm:px-6 lg:px-8 mb-6 lg:grid lg:grid-cols-2 lg:gap-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="bg-white/5 rounded-2xl p-5 border border-white/10"
+          className="bg-white/5 rounded-2xl p-5 lg:p-6 border border-white/10 mb-6 lg:mb-0"
         >
-          <div className="text-white/60 text-sm mb-4">Workout Trends</div>
-          <div className="space-y-3 text-sm text-white/80">
+          <div className="text-white/60 text-sm lg:text-base mb-4">Workout Trends</div>
+          <div className="space-y-3 text-sm lg:text-base text-white/80">
             <div className="flex items-center justify-between">
               <span className="text-white/50">Planned Today</span>
               <span>{stats.plannedToday}</span>
@@ -386,16 +388,15 @@ const Insights = () => {
             </div>
           </div>
         </motion.div>
-      </div>
 
-      <div className="px-6 mb-8">
+      <div className="mb-8 lg:mb-0">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-white/5 rounded-2xl p-5 border border-white/10"
+          className="bg-white/5 rounded-2xl p-5 lg:p-6 border border-white/10"
         >
-          <div className="text-white/60 text-sm mb-4">Data Tools</div>
+          <div className="text-white/60 text-sm lg:text-base mb-4">Data Tools</div>
           <div className="flex items-center justify-between text-xs text-white/50 mb-4">
             <span>
               {user?.email
@@ -441,6 +442,7 @@ const Insights = () => {
             )}
           </AnimatePresence>
         </motion.div>
+      </div>
       </div>
 
       {/* Copy Log Modal */}

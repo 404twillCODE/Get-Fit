@@ -21,7 +21,7 @@ const BottomNav = () => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-xl border-t border-white/10">
-      <div className="max-w-md lg:max-w-2xl xl:max-w-4xl mx-auto px-2 sm:px-4">
+      <div className="max-w-md lg:max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
         <div className="flex items-center justify-around h-16 sm:h-16">
           {navItems.map((item) => {
             const normalizedItemPath = item.path === '/' ? '/' : item.path.replace(/\/$/, '');
