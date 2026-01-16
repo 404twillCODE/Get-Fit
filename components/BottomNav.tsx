@@ -71,7 +71,7 @@ const BottomNav = () => {
           })}
         </div>
       </div>
-    </motion.nav>
+    </nav>
   );
 };
 
