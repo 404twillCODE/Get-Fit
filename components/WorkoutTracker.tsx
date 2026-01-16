@@ -183,36 +183,44 @@ const WorkoutTracker = () => {
       </div>
 
       {/* Exercise List */}
-      <div className="px-4 sm:px-6 lg:px-8 mb-6 space-y-4 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0">
-        <AnimatePresence>
-          {workouts.map((exercise) => (
-            <motion.div
-              key={exercise.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="bg-white/5 rounded-2xl p-5 border border-white/10"
-            >
+      <div className="px-4 sm:px-6 lg:px-8 mb-6">
+        {workouts.length === 0 ? (
+          <div className="text-center py-12 text-white/40">
+            No exercises added yet. Click &quot;Add Exercise&quot; to get started!
+          </div>
+        ) : (
+          <div className="space-y-4 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-6 lg:space-y-0">
+            <AnimatePresence>
+              {workouts.map((exercise) => (
+                <motion.div
+                  key={exercise.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="bg-white/5 rounded-2xl p-5 lg:p-6 border border-white/10"
+                >
               <div className="flex justify-between items-start mb-4">
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold mb-1">{exercise.name}</h3>
-                  <span className="text-xs text-white/60 bg-white/5 px-2 py-1 rounded">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg lg:text-xl font-semibold mb-1 truncate">{exercise.name}</h3>
+                  <span className="text-xs lg:text-sm text-white/60 bg-white/5 px-2 py-1 rounded inline-block">
                     {exercise.type === "strength" ? "Strength" : "Cardio"}
                   </span>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 ml-2 flex-shrink-0">
                   <button
                     onClick={() => {
                       setEditingExercise(exercise);
                       setShowModal(true);
                     }}
-                    className="text-white/60 hover:text-white"
+                    className="text-white/60 hover:text-white text-lg lg:text-xl transition-colors"
+                    aria-label="Edit exercise"
                   >
                     ✏️
                   </button>
                   <button
                     onClick={() => removeExercise(exercise.id)}
-                    className="text-red-400 hover:text-red-300"
+                    className="text-red-400 hover:text-red-300 text-lg lg:text-xl transition-colors"
+                    aria-label="Delete exercise"
                   >
                     🗑️
                   </button>
@@ -279,25 +287,21 @@ const WorkoutTracker = () => {
                   {exercise.notes}
                 </div>
               )}
-            </motion.div>
-          ))}
-        </AnimatePresence>
-
-        {workouts.length === 0 && (
-          <div className="text-center py-12 text-white/40">
-            No exercises added yet. Click &quot;Add Exercise&quot; to get started!
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         )}
       </div>
 
       {/* Complete Workout Button */}
       {workouts.length > 0 && (
-        <div className="px-6 mb-6">
+        <div className="px-4 sm:px-6 lg:px-8 mb-6 pb-20 sm:pb-6">
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={completeWorkout}
-            className="w-full py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-2xl font-semibold text-lg"
+            className="w-full lg:w-auto lg:px-12 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-2xl font-semibold text-lg"
           >
             Complete Workout
           </motion.button>
