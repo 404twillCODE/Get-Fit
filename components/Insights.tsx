@@ -43,6 +43,10 @@ const Insights = () => {
     deleteWorkoutHistory: false,
     deleteWorkoutSchedule: false,
   });
+  const [expandedDeleteSection, setExpandedDeleteSection] = useState<string | null>(null);
+  const [selectedDatesToDelete, setSelectedDatesToDelete] = useState<Set<string>>(new Set());
+  const [selectedWorkoutDaysToDelete, setSelectedWorkoutDaysToDelete] = useState<Set<number>>(new Set());
+  const [selectedWorkoutHistoryToDelete, setSelectedWorkoutHistoryToDelete] = useState<Set<number>>(new Set());
 
   const loadData = async () => {
     const data = await loadAppData();
@@ -147,15 +151,35 @@ const Insights = () => {
     const data = await loadAppData();
     const updatedData = { ...data };
 
-    if (deleteOptions.deleteDeficitEntries) {
+    // Delete specific deficit entries
+    if (selectedDatesToDelete.size > 0) {
+      updatedData.deficitEntries = updatedData.deficitEntries.filter(
+        (entry) => !selectedDatesToDelete.has(entry.date)
+      );
+    } else if (deleteOptions.deleteDeficitEntries) {
       updatedData.deficitEntries = [];
     }
-    if (deleteOptions.deleteWorkouts) {
+
+    // Delete specific workout days
+    if (selectedWorkoutDaysToDelete.size > 0) {
+      const newWorkouts = [...updatedData.savedWorkouts];
+      selectedWorkoutDaysToDelete.forEach((dayIndex) => {
+        newWorkouts[dayIndex] = [];
+      });
+      updatedData.savedWorkouts = newWorkouts;
+    } else if (deleteOptions.deleteWorkouts) {
       updatedData.savedWorkouts = Array.from({ length: 7 }, () => []);
     }
-    if (deleteOptions.deleteWorkoutHistory) {
+
+    // Delete specific workout history entries
+    if (selectedWorkoutHistoryToDelete.size > 0) {
+      updatedData.workoutHistory = updatedData.workoutHistory.filter(
+        (_, index) => !selectedWorkoutHistoryToDelete.has(index)
+      );
+    } else if (deleteOptions.deleteWorkoutHistory) {
       updatedData.workoutHistory = [];
     }
+
     if (deleteOptions.deleteWorkoutSchedule) {
       updatedData.workoutSchedule = Array(7).fill("Rest Day");
     }
@@ -170,6 +194,10 @@ const Insights = () => {
       deleteWorkoutHistory: false,
       deleteWorkoutSchedule: false,
     });
+    setExpandedDeleteSection(null);
+    setSelectedDatesToDelete(new Set());
+    setSelectedWorkoutDaysToDelete(new Set());
+    setSelectedWorkoutHistoryToDelete(new Set());
     setSyncStatus("Data deleted successfully!");
     setTimeout(() => setSyncStatus(""), 3000);
   };
@@ -807,37 +835,160 @@ const Insights = () => {
                 
                 <div className="space-y-3 mb-6">
                   {entries.length > 0 && (
-                    <label className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
-                      <div>
-                        <span className="text-sm font-medium">Deficit Entries</span>
-                        <div className="text-xs text-white/50 mt-1">
-                          {entries.length} day{entries.length !== 1 ? "s" : ""} of nutrition & fitness data
+                    <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+                      <button
+                        onClick={() => setExpandedDeleteSection(expandedDeleteSection === "deficit" ? null : "deficit")}
+                        className="w-full flex items-center justify-between p-3 hover:bg-white/10 transition-colors"
+                      >
+                        <div className="text-left">
+                          <span className="text-sm font-medium">Deficit Entries</span>
+                          <div className="text-xs text-white/50 mt-1">
+                            {selectedDatesToDelete.size > 0 
+                              ? `${selectedDatesToDelete.size} selected` 
+                              : `${entries.length} day${entries.length !== 1 ? "s" : ""} of nutrition & fitness data`}
+                          </div>
                         </div>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={deleteOptions.deleteDeficitEntries}
-                        onChange={(e) => setDeleteOptions({ ...deleteOptions, deleteDeficitEntries: e.target.checked })}
-                        className="w-5 h-5 rounded"
-                      />
-                    </label>
+                        <div className="flex items-center gap-2">
+                          {selectedDatesToDelete.size > 0 && (
+                            <span className="text-xs text-red-400">{selectedDatesToDelete.size}</span>
+                          )}
+                          <span className="text-white/40">{expandedDeleteSection === "deficit" ? "▼" : "▶"}</span>
+                        </div>
+                      </button>
+                      {expandedDeleteSection === "deficit" && (
+                        <div className="px-3 pb-3 space-y-2 max-h-48 overflow-y-auto">
+                          <div className="flex items-center justify-between mb-2">
+                            <button
+                              onClick={() => {
+                                if (selectedDatesToDelete.size === entries.length) {
+                                  setSelectedDatesToDelete(new Set());
+                                } else {
+                                  setSelectedDatesToDelete(new Set(entries.map(e => e.date)));
+                                }
+                              }}
+                              className="text-xs text-white/60 hover:text-white/80"
+                            >
+                              {selectedDatesToDelete.size === entries.length ? "Deselect All" : "Select All"}
+                            </button>
+                          </div>
+                          {entries
+                            .sort((a, b) => b.date.localeCompare(a.date))
+                            .map((entry) => {
+                              const entryDate = new Date(entry.date);
+                              const isSelected = selectedDatesToDelete.has(entry.date);
+                              return (
+                                <label
+                                  key={entry.date}
+                                  className="flex items-center justify-between p-2 bg-white/5 rounded-lg border border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
+                                >
+                                  <div>
+                                    <span className="text-xs font-medium">
+                                      {entryDate.toLocaleDateString("en-US", {
+                                        weekday: "short",
+                                        month: "short",
+                                        day: "numeric",
+                                        year: "numeric",
+                                      })}
+                                    </span>
+                                    <div className="text-xs text-white/50 mt-0.5">
+                                      {entry.caloriesEaten || 0} eaten • {entry.caloriesBurned || 0} burned
+                                    </div>
+                                  </div>
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={(e) => {
+                                      const newSelected = new Set(selectedDatesToDelete);
+                                      if (e.target.checked) {
+                                        newSelected.add(entry.date);
+                                      } else {
+                                        newSelected.delete(entry.date);
+                                      }
+                                      setSelectedDatesToDelete(newSelected);
+                                    }}
+                                    className="w-4 h-4 rounded"
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                </label>
+                              );
+                            })}
+                        </div>
+                      )}
+                    </div>
                   )}
                   
                   {history.length > 0 && (
-                    <label className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
-                      <div>
-                        <span className="text-sm font-medium">Workout History</span>
-                        <div className="text-xs text-white/50 mt-1">
-                          {history.length} completed workout{history.length !== 1 ? "s" : ""}
+                    <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+                      <button
+                        onClick={() => setExpandedDeleteSection(expandedDeleteSection === "history" ? null : "history")}
+                        className="w-full flex items-center justify-between p-3 hover:bg-white/10 transition-colors"
+                      >
+                        <div className="text-left">
+                          <span className="text-sm font-medium">Workout History</span>
+                          <div className="text-xs text-white/50 mt-1">
+                            {selectedWorkoutHistoryToDelete.size > 0
+                              ? `${selectedWorkoutHistoryToDelete.size} selected`
+                              : `${history.length} completed workout${history.length !== 1 ? "s" : ""}`}
+                          </div>
                         </div>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={deleteOptions.deleteWorkoutHistory}
-                        onChange={(e) => setDeleteOptions({ ...deleteOptions, deleteWorkoutHistory: e.target.checked })}
-                        className="w-5 h-5 rounded"
-                      />
-                    </label>
+                        <span className="text-white/40">{expandedDeleteSection === "history" ? "▼" : "▶"}</span>
+                      </button>
+                      {expandedDeleteSection === "history" && (
+                        <div className="px-3 pb-3 space-y-2 max-h-48 overflow-y-auto">
+                          <div className="flex items-center justify-between mb-2">
+                            <button
+                              onClick={() => {
+                                if (selectedWorkoutHistoryToDelete.size === history.length) {
+                                  setSelectedWorkoutHistoryToDelete(new Set());
+                                } else {
+                                  setSelectedWorkoutHistoryToDelete(new Set(history.map((_, i) => i)));
+                                }
+                              }}
+                              className="text-xs text-white/60 hover:text-white/80"
+                            >
+                              {selectedWorkoutHistoryToDelete.size === history.length ? "Deselect All" : "Select All"}
+                            </button>
+                          </div>
+                          {history
+                            .sort((a, b) => b.timestamp - a.timestamp)
+                            .map((workout, index) => {
+                              const workoutDate = new Date(workout.date);
+                              const originalIndex = history.findIndex(w => w.timestamp === workout.timestamp);
+                              const isSelected = selectedWorkoutHistoryToDelete.has(originalIndex);
+                              return (
+                                <label
+                                  key={workout.timestamp}
+                                  className="flex items-center justify-between p-2 bg-white/5 rounded-lg border border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
+                                >
+                                  <span className="text-xs">
+                                    {workoutDate.toLocaleDateString("en-US", {
+                                      weekday: "short",
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                    })}
+                                  </span>
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={(e) => {
+                                      const newSelected = new Set(selectedWorkoutHistoryToDelete);
+                                      if (e.target.checked) {
+                                        newSelected.add(originalIndex);
+                                      } else {
+                                        newSelected.delete(originalIndex);
+                                      }
+                                      setSelectedWorkoutHistoryToDelete(newSelected);
+                                    }}
+                                    className="w-4 h-4 rounded"
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                </label>
+                              );
+                            })}
+                        </div>
+                      )}
+                    </div>
                   )}
                   
                   {schedule.some(day => day !== "Rest Day") && (
@@ -858,24 +1009,61 @@ const Insights = () => {
                   )}
                   
                   {savedWorkouts.some((day: unknown[]) => Array.isArray(day) && day.length > 0) && (
-                    <label className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
-                      <div>
-                        <span className="text-sm font-medium">Saved Workouts</span>
-                        <div className="text-xs text-white/50 mt-1">
-                          Planned workouts by day
+                    <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+                      <button
+                        onClick={() => setExpandedDeleteSection(expandedDeleteSection === "workouts" ? null : "workouts")}
+                        className="w-full flex items-center justify-between p-3 hover:bg-white/10 transition-colors"
+                      >
+                        <div className="text-left">
+                          <span className="text-sm font-medium">Saved Workouts</span>
+                          <div className="text-xs text-white/50 mt-1">
+                            {selectedWorkoutDaysToDelete.size > 0
+                              ? `${selectedWorkoutDaysToDelete.size} day${selectedWorkoutDaysToDelete.size !== 1 ? "s" : ""} selected`
+                              : "Planned workouts by day"}
+                          </div>
                         </div>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={deleteOptions.deleteWorkouts}
-                        onChange={(e) => setDeleteOptions({ ...deleteOptions, deleteWorkouts: e.target.checked })}
-                        className="w-5 h-5 rounded"
-                      />
-                    </label>
+                        <span className="text-white/40">{expandedDeleteSection === "workouts" ? "▼" : "▶"}</span>
+                      </button>
+                      {expandedDeleteSection === "workouts" && (
+                        <div className="px-3 pb-3 space-y-2">
+                          {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((dayName, dayIndex) => {
+                            const hasWorkouts = Array.isArray(savedWorkouts[dayIndex]) && savedWorkouts[dayIndex].length > 0;
+                            if (!hasWorkouts) return null;
+                            const isSelected = selectedWorkoutDaysToDelete.has(dayIndex);
+                            return (
+                              <label
+                                key={dayIndex}
+                                className="flex items-center justify-between p-2 bg-white/5 rounded-lg border border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
+                              >
+                                <span className="text-xs">
+                                  {dayName} ({savedWorkouts[dayIndex].length} exercise{(savedWorkouts[dayIndex] as unknown[]).length !== 1 ? "s" : ""})
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={(e) => {
+                                    const newSelected = new Set(selectedWorkoutDaysToDelete);
+                                    if (e.target.checked) {
+                                      newSelected.add(dayIndex);
+                                    } else {
+                                      newSelected.delete(dayIndex);
+                                    }
+                                    setSelectedWorkoutDaysToDelete(newSelected);
+                                  }}
+                                  className="w-4 h-4 rounded"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   )}
                   
                   {entries.length === 0 && history.length === 0 && 
-                   !schedule.some(day => day !== "Rest Day") && (
+                   !schedule.some(day => day !== "Rest Day") &&
+                   !savedWorkouts.some((day: unknown[]) => Array.isArray(day) && day.length > 0) && (
                     <div className="text-center py-4 text-white/40 text-sm">
                       No data to delete
                     </div>
@@ -900,9 +1088,9 @@ const Insights = () => {
                   <button
                     onClick={handleDeleteData}
                     disabled={
-                      !deleteOptions.deleteDeficitEntries &&
-                      !deleteOptions.deleteWorkouts &&
-                      !deleteOptions.deleteWorkoutHistory &&
+                      selectedDatesToDelete.size === 0 &&
+                      selectedWorkoutDaysToDelete.size === 0 &&
+                      selectedWorkoutHistoryToDelete.size === 0 &&
                       !deleteOptions.deleteWorkoutSchedule
                     }
                     className="flex-1 py-3 bg-red-500/20 border border-red-500/30 text-red-200 rounded-xl font-semibold hover:bg-red-500/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
