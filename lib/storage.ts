@@ -54,6 +54,7 @@ export type AppData = {
   weightHistory: WeightEntry[];
   profile?: UserProfile;
   profileSetupComplete?: boolean;
+  workoutSetupComplete?: boolean;
 };
 
 export const STORAGE_KEYS = [
@@ -81,6 +82,7 @@ export const getDefaultData = (): AppData => ({
   weightHistory: [],
   profile: undefined,
   profileSetupComplete: false,
+  workoutSetupComplete: false,
 });
 
 export const getLocalData = (includeGuestProfile = false): AppData => {

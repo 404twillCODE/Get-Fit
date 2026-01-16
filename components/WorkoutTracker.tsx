@@ -13,10 +13,12 @@ interface Set {
   breakTime?: number; // Break time in seconds
 }
 
+type ExerciseCategory = "legs" | "arms" | "chest" | "back" | "shoulders" | "core" | "cardio" | "full_body";
+
 interface Exercise {
   id: number;
   name: string;
-  category: "legs" | "arms" | "chest" | "back" | "shoulders" | "core" | "cardio" | "full_body";
+  categories: ExerciseCategory[]; // Multiple categories allowed
   sets?: Set[];
   selectedDays?: number[]; // Days of week (0-6) where this exercise appears
   notes?: string;
@@ -32,6 +34,8 @@ const WorkoutTracker = () => {
   const [workoutSchedule, setWorkoutSchedule] = useState<string[]>(
     Array(7).fill("Rest Day")
   );
+  const [showSetup, setShowSetup] = useState(false);
+  const [setupStep, setSetupStep] = useState(1);
 
   const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const categories = [
@@ -46,9 +50,25 @@ const WorkoutTracker = () => {
   ];
 
   useEffect(() => {
+    checkWorkoutSetup();
     loadWorkoutSchedule();
     loadDayWorkouts();
   }, []);
+
+  const checkWorkoutSetup = async () => {
+    try {
+      const data = await loadAppData();
+      const hasExercises = data.savedWorkouts.some((day) => Array.isArray(day) && day.length > 0);
+      const hasSchedule = data.workoutSchedule.some((day) => day !== "Rest Day");
+      
+      // Show setup if no exercises and no schedule, or if setup not marked complete
+      if (!data.workoutSetupComplete && (!hasExercises || !hasSchedule)) {
+        setShowSetup(true);
+      }
+    } catch (error) {
+      console.error("Error checking workout setup:", error);
+    }
+  };
 
   useEffect(() => {
     loadDayWorkouts();
@@ -78,15 +98,47 @@ const WorkoutTracker = () => {
   };
 
   const loadDayWorkouts = async () => {
-    const data = await loadAppData();
-    // Get workouts for current day directly (they're already organized by day)
-    const dayWorkouts = (data.savedWorkouts[currentDayIndex] || []) as Exercise[];
-    
-    // Remove duplicates by using a Map with exercise.id as key (safety check)
-    const uniqueWorkouts = Array.from(
-      new Map(dayWorkouts.map((exercise) => [exercise.id, exercise])).values()
-    );
-    setWorkouts(uniqueWorkouts);
+    try {
+      const data = await loadAppData();
+      // Get workouts for current day directly (they're already organized by day)
+      const dayWorkouts = (data.savedWorkouts[currentDayIndex] || []) as any[];
+      
+      // Migrate old exercises with single category to categories array
+      const migratedWorkouts = dayWorkouts.map((exercise) => {
+        // Ensure categories array exists
+        if (!exercise.categories) {
+          if ((exercise as any).category) {
+            return {
+              ...exercise,
+              categories: [(exercise as any).category],
+            } as Exercise;
+          } else {
+            // Default to legs if no category at all
+            return {
+              ...exercise,
+              categories: ["legs"],
+            } as Exercise;
+          }
+        }
+        // Ensure categories is an array
+        if (!Array.isArray(exercise.categories)) {
+          return {
+            ...exercise,
+            categories: [exercise.categories],
+          } as Exercise;
+        }
+        return exercise as Exercise;
+      });
+      
+      // Remove duplicates by using a Map with exercise.id as key (safety check)
+      const uniqueWorkouts = Array.from(
+        new Map(migratedWorkouts.map((exercise) => [exercise.id, exercise])).values()
+      );
+      setWorkouts(uniqueWorkouts);
+    } catch (error) {
+      console.error("Error loading workouts:", error);
+      setWorkouts([]);
+    }
   };
 
   const saveDayWorkouts = async (updatedWorkouts: Exercise[]) => {
@@ -128,44 +180,64 @@ const WorkoutTracker = () => {
   };
 
   const addExercise = async (exercise: Exercise) => {
-    if (editingExercise) {
-      // Update existing exercise - update it in the workout map
-      await updateAppData((current) => {
-        const savedWorkouts: Exercise[][] = Array.from({ length: 7 }, () => []);
-        
-        // Rebuild the arrays with the updated exercise
-        for (let day = 0; day < 7; day++) {
-          const dayWorkouts = (current.savedWorkouts[day] || []) as Exercise[];
-          savedWorkouts[day] = dayWorkouts.map((e) =>
-            e.id === editingExercise.id ? exercise : e
-          );
-        }
-        
-        return { ...current, savedWorkouts };
-      });
-      setEditingExercise(null);
-    } else {
-      // Add new exercise - add it to the appropriate days
-      await updateAppData((current) => {
-        const savedWorkouts = [...current.savedWorkouts];
-        
-        if (!exercise.selectedDays || exercise.selectedDays.length === 0) {
-          // Add to all days if no selection
-          for (let i = 0; i < 7; i++) {
-            savedWorkouts[i] = [...(savedWorkouts[i] || []), exercise];
+    try {
+      if (editingExercise) {
+        // Update existing exercise - remove from all days first, then add to new days
+        await updateAppData((current) => {
+          const savedWorkouts: Exercise[][] = Array.from({ length: 7 }, () => []);
+          
+          // First, remove the exercise from all days
+          for (let day = 0; day < 7; day++) {
+            const dayWorkouts = (current.savedWorkouts[day] || []) as any[];
+            savedWorkouts[day] = dayWorkouts.filter((e) => {
+              // Handle both old and new format
+              const eId = e.id;
+              return eId !== editingExercise.id;
+            }) as Exercise[];
           }
-        } else {
-          // Add to selected days only
-          exercise.selectedDays.forEach((day) => {
-            savedWorkouts[day] = [...(savedWorkouts[day] || []), exercise];
-          });
-        }
-        
-        return { ...current, savedWorkouts };
-      });
+          
+          // Then add the updated exercise to the appropriate days
+          if (!exercise.selectedDays || exercise.selectedDays.length === 0) {
+            // Add to all days if no selection
+            for (let i = 0; i < 7; i++) {
+              savedWorkouts[i] = [...savedWorkouts[i], exercise];
+            }
+          } else {
+            // Add to selected days only
+            exercise.selectedDays.forEach((day) => {
+              savedWorkouts[day] = [...savedWorkouts[day], exercise];
+            });
+          }
+          
+          return { ...current, savedWorkouts };
+        });
+        setEditingExercise(null);
+      } else {
+        // Add new exercise - add it to the appropriate days
+        await updateAppData((current) => {
+          const savedWorkouts = [...current.savedWorkouts];
+          
+          if (!exercise.selectedDays || exercise.selectedDays.length === 0) {
+            // Add to all days if no selection
+            for (let i = 0; i < 7; i++) {
+              savedWorkouts[i] = [...(savedWorkouts[i] || []), exercise];
+            }
+          } else {
+            // Add to selected days only
+            exercise.selectedDays.forEach((day) => {
+              savedWorkouts[day] = [...(savedWorkouts[day] || []), exercise];
+            });
+          }
+          
+          return { ...current, savedWorkouts };
+        });
+      }
+      await loadDayWorkouts(); // Reload to show updated list
+      setShowModal(false);
+    } catch (error) {
+      console.error("Error saving exercise:", error);
+      alert("Failed to save exercise. Please try again.");
     }
-    await loadDayWorkouts(); // Reload to show updated list
-    setShowModal(false);
   };
 
   const removeExercise = async (id: number) => {
@@ -528,6 +600,27 @@ const WorkoutTracker = () => {
         editingExercise={editingExercise}
         currentDayIndex={currentDayIndex}
       />
+
+      {/* Workout Setup Modal */}
+      <WorkoutSetupModal
+        show={showSetup}
+        onComplete={async () => {
+          await updateAppData((current) => ({
+            ...current,
+            workoutSetupComplete: true,
+          }));
+          setShowSetup(false);
+          await loadWorkoutSchedule();
+          await loadDayWorkouts();
+        }}
+        onAddExercise={(dayIndex) => {
+          // This will be handled inside the setup modal
+        }}
+        workoutSchedule={workoutSchedule}
+        setWorkoutSchedule={setWorkoutSchedule}
+        currentDayIndex={currentDayIndex}
+        setCurrentDayIndex={setCurrentDayIndex}
+      />
     </div>
   );
 };
@@ -548,7 +641,7 @@ const ExerciseModal = ({
   currentDayIndex,
 }: ExerciseModalProps) => {
   const [name, setName] = useState("");
-  const [category, setCategory] = useState<Exercise["category"]>("legs");
+  const [selectedCategories, setSelectedCategories] = useState<ExerciseCategory[]>(["legs"]);
   const [sets, setSets] = useState(3);
   const [reps, setReps] = useState(10);
   const [weight, setWeight] = useState("");
@@ -571,7 +664,14 @@ const ExerciseModal = ({
   useEffect(() => {
     if (editingExercise) {
       setName(editingExercise.name);
-      setCategory(editingExercise.category);
+      // Handle migration from old single category to categories array
+      if (editingExercise.categories && editingExercise.categories.length > 0) {
+        setSelectedCategories(editingExercise.categories);
+      } else if ((editingExercise as any).category) {
+        setSelectedCategories([(editingExercise as any).category]);
+      } else {
+        setSelectedCategories(["legs"]);
+      }
       if (editingExercise.sets) {
         setSets(editingExercise.sets.length);
         setReps(editingExercise.sets[0]?.reps || 10);
@@ -587,13 +687,21 @@ const ExerciseModal = ({
 
   const resetForm = () => {
     setName("");
-    setCategory("legs");
+    setSelectedCategories(["legs"]);
     setSets(3);
     setReps(10);
     setWeight("");
     setBreakTime(60);
     setSelectedDays([currentDayIndex]);
     setNotes("");
+  };
+
+  const toggleCategory = (category: ExerciseCategory) => {
+    setSelectedCategories((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category]
+    );
   };
 
   const toggleDay = (dayIndex: number) => {
@@ -609,11 +717,15 @@ const ExerciseModal = ({
       alert("Please enter an exercise name");
       return;
     }
+    if (selectedCategories.length === 0) {
+      alert("Please select at least one category");
+      return;
+    }
 
     const exercise: Exercise = {
       id: editingExercise?.id || Date.now(),
       name: name.trim(),
-      category,
+      categories: selectedCategories.length > 0 ? selectedCategories : ["legs"],
       notes: notes.trim() || undefined,
       completed: false,
       selectedDays: selectedDays.length > 0 ? selectedDays : undefined,
@@ -680,19 +792,29 @@ const ExerciseModal = ({
 
                 <div>
                   <label className="text-white/60 text-sm mb-2 block">
-                    Category
+                    Categories (Select Multiple)
                   </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value as Exercise["category"])}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white"
-                  >
+                  <div className="flex gap-2 flex-wrap">
                     {categories.map((cat) => (
-                      <option key={cat.value} value={cat.value}>
+                      <button
+                        key={cat.value}
+                        type="button"
+                        onClick={() => toggleCategory(cat.value as ExerciseCategory)}
+                        className={`px-3 py-2 rounded-lg text-sm transition-colors ${
+                          selectedCategories.includes(cat.value as ExerciseCategory)
+                            ? "bg-white text-[#0a0a0a]"
+                            : "bg-white/5 text-white/60 border border-white/10"
+                        }`}
+                      >
                         {cat.label}
-                      </option>
+                      </button>
                     ))}
-                  </select>
+                  </div>
+                  {selectedCategories.length === 0 && (
+                    <div className="text-xs text-yellow-400 mt-2">
+                      Please select at least one category
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -791,6 +913,675 @@ const ExerciseModal = ({
         </>
       )}
     </AnimatePresence>
+  );
+};
+
+interface WorkoutSetupModalProps {
+  show: boolean;
+  onComplete: () => void;
+  onAddExercise: (dayIndex: number) => void;
+  workoutSchedule: string[];
+  setWorkoutSchedule: (schedule: string[]) => void;
+  currentDayIndex: number;
+  setCurrentDayIndex: (index: number) => void;
+}
+
+const WorkoutSetupModal = ({
+  show,
+  onComplete,
+  onAddExercise,
+  workoutSchedule,
+  setWorkoutSchedule,
+  currentDayIndex,
+  setCurrentDayIndex,
+}: WorkoutSetupModalProps) => {
+  const [step, setStep] = useState(1);
+  const [selectedDays, setSelectedDays] = useState<number[]>([]);
+  const [workoutTypes, setWorkoutTypes] = useState<Record<number, string[]>>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [showExerciseModal, setShowExerciseModal] = useState(false);
+  const [exerciseModalDayIndex, setExerciseModalDayIndex] = useState<number | null>(null);
+
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const workoutTypeOptions = [
+    "Push",
+    "Pull",
+    "Legs",
+    "Arms",
+    "Chest",
+    "Back",
+    "Shoulders",
+    "Core",
+    "Cardio",
+    "Full Body",
+    "Upper Body",
+    "Lower Body",
+    "Rest Day",
+  ];
+
+  useEffect(() => {
+    if (show) {
+      setStep(1);
+      setSelectedDays([]);
+      setWorkoutTypes({});
+      setIsSaving(false);
+    }
+  }, [show]);
+
+  const toggleDay = (dayIndex: number) => {
+    setSelectedDays((prev) =>
+      prev.includes(dayIndex)
+        ? prev.filter((d) => d !== dayIndex)
+        : [...prev, dayIndex]
+    );
+  };
+
+  const handleNextFromDays = () => {
+    if (selectedDays.length === 0) {
+      return;
+    }
+    setStep(2);
+  };
+
+  const toggleWorkoutType = (dayIndex: number, workoutType: string) => {
+    setWorkoutTypes((prev) => {
+      const currentTypes = prev[dayIndex] || [];
+      const isSelected = currentTypes.includes(workoutType);
+      return {
+        ...prev,
+        [dayIndex]: isSelected
+          ? currentTypes.filter((t) => t !== workoutType)
+          : [...currentTypes, workoutType],
+      };
+    });
+  };
+
+  const handleSaveWorkoutTypes = async () => {
+    if (isSaving) {
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const currentData = await loadAppData();
+      const newSchedule = [...(currentData.workoutSchedule || Array(7).fill("Rest Day"))];
+      selectedDays.forEach((day) => {
+        const types = workoutTypes[day] || [];
+        newSchedule[day] = types.length > 0 ? types.join(" + ") : "Workout";
+      });
+      await updateAppData((current) => ({
+        ...current,
+        workoutSchedule: newSchedule,
+      }));
+      setWorkoutSchedule(newSchedule);
+      setStep(3);
+    } catch (error) {
+      console.error("Error saving workout types:", error);
+      alert("Failed to save workout types. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleComplete = async () => {
+    await onComplete();
+  };
+
+  if (!show) return null;
+
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          key="workout-setup-wrapper"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50"
+        >
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => {}}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+          />
+          
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          >
+            <div className="w-full max-w-2xl bg-[#0a0a0a] rounded-3xl border border-white/20 p-6 lg:p-8 max-h-[90vh] overflow-y-auto shadow-2xl">
+              {/* Progress Indicator */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm text-white/60">
+                    Step {step} of 4
+                  </div>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4].map((s) => (
+                      <div
+                        key={s}
+                        className={`h-2 w-8 rounded-full transition-colors ${
+                          s <= step ? "bg-white" : "bg-white/20"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 1: Select Days */}
+              {step === 1 && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="space-y-6"
+                >
+                  <div className="text-center">
+                    <div className="text-4xl mb-4">💪</div>
+                    <h2 className="text-2xl lg:text-3xl font-bold mb-2">
+                      Select Your Workout Days
+                    </h2>
+                    <p className="text-white/60 text-sm lg:text-base">
+                      Which days of the week do you work out?
+                    </p>
+                  </div>
+
+                  <div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {days.map((day, index) => (
+                        <button
+                          key={day}
+                          onClick={() => toggleDay(index)}
+                          className={`py-4 rounded-xl text-sm font-medium transition-all ${
+                            selectedDays.includes(index)
+                              ? "bg-white text-[#0a0a0a]"
+                              : "bg-white/5 text-white/60 border border-white/10 hover:bg-white/10"
+                          }`}
+                        >
+                          {day}
+                        </button>
+                      ))}
+                    </div>
+                    {selectedDays.length === 0 && (
+                      <div className="text-xs text-yellow-400 mt-3 text-center">
+                        Please select at least one workout day
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={handleNextFromDays}
+                      disabled={selectedDays.length === 0}
+                      className="flex-1 py-3 bg-white text-[#0a0a0a] rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/90 transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 2: Select Workout Types */}
+              {step === 2 && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="space-y-6"
+                >
+                  <div className="text-center">
+                    <div className="text-4xl mb-4">🎯</div>
+                    <h2 className="text-2xl lg:text-3xl font-bold mb-2">
+                      What Are You Doing Those Days?
+                    </h2>
+                    <p className="text-white/60 text-sm lg:text-base">
+                      Select one or more workout types for each day. You can select multiple types per day.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    {selectedDays.map((dayIndex) => (
+                      <div
+                        key={dayIndex}
+                        className="bg-white/5 rounded-xl p-4 border border-white/10"
+                      >
+                        <h3 className="font-semibold mb-3">{days[dayIndex]}</h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {workoutTypeOptions.map((type) => {
+                            const isSelected = (workoutTypes[dayIndex] || []).includes(type);
+                            return (
+                              <button
+                                key={type}
+                                onClick={() => toggleWorkoutType(dayIndex, type)}
+                                className={`py-2 px-3 rounded-lg text-xs font-medium transition-all ${
+                                  isSelected
+                                    ? "bg-white text-[#0a0a0a]"
+                                    : "bg-white/5 text-white/60 border border-white/10 hover:bg-white/10"
+                                }`}
+                              >
+                                {type}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {(workoutTypes[dayIndex] || []).length === 0 && (
+                          <div className="text-xs text-yellow-400 mt-2">
+                            Please select at least one workout type
+                          </div>
+                        )}
+                        {(workoutTypes[dayIndex] || []).length > 0 && (
+                          <div className="text-xs text-white/60 mt-2">
+                            Selected: {(workoutTypes[dayIndex] || []).join(", ")}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setStep(1)}
+                      className="px-6 py-3 bg-white/5 border border-white/10 rounded-xl font-medium hover:bg-white/10 transition-colors"
+                    >
+                      Back
+                    </button>
+                    <button
+                      onClick={handleSaveWorkoutTypes}
+                      disabled={
+                        selectedDays.some((day) => !workoutTypes[day] || workoutTypes[day].length === 0) || isSaving
+                      }
+                      className="flex-1 py-3 bg-white text-[#0a0a0a] rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/90 transition-colors"
+                    >
+                      {isSaving ? "Saving..." : "Next"}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 3: Add Exercises */}
+              {step === 3 && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="space-y-6"
+                >
+                  <div className="text-center">
+                    <div className="text-4xl mb-4">🏋️</div>
+                    <h2 className="text-2xl lg:text-3xl font-bold mb-2">
+                      Add Your Exercises
+                    </h2>
+                    <p className="text-white/60 text-sm lg:text-base">
+                      Now let's add exercises to your workout days. You can add more later!
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    {selectedDays.map((dayIndex) => (
+                      <div
+                        key={dayIndex}
+                        className="bg-white/5 rounded-xl p-4 border border-white/10"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-semibold">{days[dayIndex]}</h3>
+                          <span className="text-xs text-white/60">
+                            {(workoutTypes[dayIndex] && workoutTypes[dayIndex].length > 0)
+                              ? workoutTypes[dayIndex].join(" + ")
+                              : workoutSchedule[dayIndex] || "Workout"}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setExerciseModalDayIndex(dayIndex);
+                            setShowExerciseModal(true);
+                          }}
+                          className="w-full py-2 bg-white/10 border border-white/20 rounded-lg text-sm hover:bg-white/20 transition-colors"
+                        >
+                          + Add Exercise
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setStep(2)}
+                      className="px-6 py-3 bg-white/5 border border-white/10 rounded-xl font-medium hover:bg-white/10 transition-colors"
+                    >
+                      Back
+                    </button>
+                    <button
+                      onClick={() => setStep(4)}
+                      className="flex-1 py-3 bg-white text-[#0a0a0a] rounded-xl font-semibold"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 4: Complete */}
+              {step === 4 && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="space-y-6 text-center"
+                >
+                  <div className="text-4xl mb-4">🎉</div>
+                  <h2 className="text-2xl lg:text-3xl font-bold mb-2">
+                    You're All Set!
+                  </h2>
+                  <p className="text-white/60 text-sm lg:text-base mb-6">
+                    Your workout tracker is ready. You can always add more exercises or modify your schedule later.
+                  </p>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setStep(3)}
+                      className="px-6 py-3 bg-white/5 border border-white/10 rounded-xl font-medium hover:bg-white/10 transition-colors"
+                    >
+                      Back
+                    </button>
+                    <button
+                      onClick={handleComplete}
+                      className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl font-semibold"
+                    >
+                      Start Tracking!
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Setup Exercise Modal - appears within setup flow */}
+      {showExerciseModal && exerciseModalDayIndex !== null && (
+        <SetupExerciseModal
+          key={`setup-exercise-${exerciseModalDayIndex}`}
+          show={showExerciseModal}
+          dayIndex={exerciseModalDayIndex}
+          onClose={() => {
+            setShowExerciseModal(false);
+            setExerciseModalDayIndex(null);
+          }}
+          onSave={async (exercise) => {
+            // Save exercise to the specific day
+            const allData = await loadAppData();
+            const newSavedWorkouts = [...allData.savedWorkouts];
+            const dayWorkouts = (newSavedWorkouts[exerciseModalDayIndex!] || []) as Exercise[];
+            newSavedWorkouts[exerciseModalDayIndex!] = [...dayWorkouts, exercise];
+            
+            await updateAppData((current) => ({
+              ...current,
+              savedWorkouts: newSavedWorkouts,
+            }));
+            
+            setShowExerciseModal(false);
+            setExerciseModalDayIndex(null);
+          }}
+        />
+      )}
+    </AnimatePresence>
+  );
+};
+
+interface SetupExerciseModalProps {
+  show: boolean;
+  dayIndex: number | null;
+  onClose: () => void;
+  onSave: (exercise: Exercise) => void;
+}
+
+const SetupExerciseModal = ({
+  show,
+  dayIndex,
+  onClose,
+  onSave,
+}: SetupExerciseModalProps) => {
+  const [name, setName] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<ExerciseCategory[]>(["legs"]);
+  const [sets, setSets] = useState(3);
+  const [reps, setReps] = useState(10);
+  const [weight, setWeight] = useState("");
+  const [breakTime, setBreakTime] = useState(60);
+  const [notes, setNotes] = useState("");
+
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const categories = [
+    { value: "legs", label: "Legs" },
+    { value: "arms", label: "Arms" },
+    { value: "chest", label: "Chest" },
+    { value: "back", label: "Back" },
+    { value: "shoulders", label: "Shoulders" },
+    { value: "core", label: "Core" },
+    { value: "cardio", label: "Cardio" },
+    { value: "full_body", label: "Full Body" },
+  ];
+
+  useEffect(() => {
+    if (show) {
+      setName("");
+      setSelectedCategories(["legs"]);
+      setSets(3);
+      setReps(10);
+      setWeight("");
+      setBreakTime(60);
+      setNotes("");
+    }
+  }, [show]);
+
+  const toggleCategory = (category: ExerciseCategory) => {
+    setSelectedCategories((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category]
+    );
+  };
+
+  const handleSave = () => {
+    if (!name.trim()) {
+      alert("Please enter an exercise name");
+      return;
+    }
+    if (selectedCategories.length === 0) {
+      alert("Please select at least one category");
+      return;
+    }
+    if (dayIndex === null) {
+      return;
+    }
+
+    const exercise: Exercise = {
+      id: Date.now(),
+      name: name.trim(),
+      categories: selectedCategories.length > 0 ? selectedCategories : ["legs"],
+      notes: notes.trim() || undefined,
+      completed: false,
+      selectedDays: [dayIndex],
+      sets: Array.from({ length: sets }, (_, i) => ({
+        setNumber: i + 1,
+        reps,
+        weight: parseFloat(weight) || 0,
+        completed: false,
+        breakTime,
+      })),
+    };
+
+    onSave(exercise);
+  };
+
+  if (!show || dayIndex === null) return null;
+
+  return (
+    <motion.div
+      key={`setup-exercise-wrapper-${dayIndex}`}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[60]"
+    >
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 bg-black/90 backdrop-blur-sm"
+      />
+      
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
+        className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      >
+            <div className="w-full max-w-lg bg-[#0a0a0a] rounded-3xl border border-white/20 p-6 lg:p-8 max-h-[90vh] overflow-y-auto shadow-2xl">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold mb-1">Add Exercise</h2>
+                  <p className="text-sm text-white/60">
+                    {days[dayIndex]}
+                  </p>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="text-white/60 hover:text-white transition-colors text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-white/60 text-sm mb-2 block">
+                    Exercise Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g., Bench Press"
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-white/60 text-sm mb-2 block">
+                    Categories *
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {categories.map((cat) => {
+                      const isSelected = selectedCategories.includes(cat.value as ExerciseCategory);
+                      return (
+                        <button
+                          key={cat.value}
+                          onClick={() => toggleCategory(cat.value as ExerciseCategory)}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                            isSelected
+                              ? "bg-white text-[#0a0a0a]"
+                              : "bg-white/5 text-white/60 border border-white/10 hover:bg-white/10"
+                          }`}
+                        >
+                          {cat.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-white/60 text-sm mb-2 block">
+                      Sets
+                    </label>
+                    <input
+                      type="number"
+                      value={sets}
+                      onChange={(e) => setSets(parseInt(e.target.value) || 1)}
+                      min="1"
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-white/60 text-sm mb-2 block">
+                      Reps
+                    </label>
+                    <input
+                      type="number"
+                      value={reps}
+                      onChange={(e) => setReps(parseInt(e.target.value) || 1)}
+                      min="1"
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-white/60 text-sm mb-2 block">
+                      Weight (optional)
+                    </label>
+                    <input
+                      type="number"
+                      value={weight}
+                      onChange={(e) => setWeight(e.target.value)}
+                      placeholder="0"
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-white/60 text-sm mb-2 block">
+                      Break (seconds)
+                    </label>
+                    <input
+                      type="number"
+                      value={breakTime}
+                      onChange={(e) => setBreakTime(parseInt(e.target.value) || 0)}
+                      min="0"
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-white/60 text-sm mb-2 block">
+                    Notes (optional)
+                  </label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Add any notes..."
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white min-h-[80px]"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={onClose}
+                    className="flex-1 px-6 py-3 bg-white/5 border border-white/10 rounded-xl font-medium hover:bg-white/10 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleSave}
+                    className="flex-1 py-3 bg-white text-[#0a0a0a] rounded-xl font-semibold"
+                  >
+                    Add Exercise
+                  </motion.button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+    </motion.div>
   );
 };
 
