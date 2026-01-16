@@ -132,26 +132,30 @@ const Insights = () => {
   };
 
   const toggleDateSelection = (dateKey: string) => {
-    const newSelected = new Set(selectedDates);
-    
     // If there's a last clicked date and we're clicking a different date, select range
     if (lastClickedDate && lastClickedDate !== dateKey) {
-      const startDate = new Date(lastClickedDate);
-      const endDate = new Date(dateKey);
+      const startDate = new Date(lastClickedDate + "T00:00:00");
+      const endDate = new Date(dateKey + "T00:00:00");
       
-      // Swap if end is before start
-      if (endDate < startDate) {
-        const temp = startDate;
-        startDate.setTime(endDate.getTime());
-        endDate.setTime(temp.getTime());
+      // Determine which is earlier
+      let earlierDate: Date;
+      let laterDate: Date;
+      if (startDate <= endDate) {
+        earlierDate = startDate;
+        laterDate = endDate;
+      } else {
+        earlierDate = endDate;
+        laterDate = startDate;
       }
       
       // Select all dates in the range
-      const currentDate = new Date(startDate);
-      while (currentDate <= endDate) {
+      const newSelected = new Set<string>();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const currentDate = new Date(earlierDate);
+      while (currentDate <= laterDate) {
         const dateKeyToAdd = currentDate.toISOString().split("T")[0];
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
         const dateToCheck = new Date(currentDate);
         dateToCheck.setHours(0, 0, 0, 0);
         
@@ -162,9 +166,11 @@ const Insights = () => {
         currentDate.setDate(currentDate.getDate() + 1);
       }
       
+      setSelectedDates(newSelected);
       setLastClickedDate(dateKey);
     } else {
       // Toggle single date selection
+      const newSelected = new Set(selectedDates);
       if (newSelected.has(dateKey)) {
         newSelected.delete(dateKey);
         setLastClickedDate(null);
@@ -172,9 +178,8 @@ const Insights = () => {
         newSelected.add(dateKey);
         setLastClickedDate(dateKey);
       }
+      setSelectedDates(newSelected);
     }
-    
-    setSelectedDates(newSelected);
   };
 
   const getDaysInMonth = (date: Date) => {
