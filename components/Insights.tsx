@@ -51,10 +51,11 @@ const Insights = () => {
   useEffect(() => {
     if (showCopyModal) {
       const today = new Date();
+      today.setHours(0, 0, 0, 0); // Normalize to midnight
       const todayKey = today.toISOString().split("T")[0];
       setSelectedDates(new Set([todayKey]));
       setLastClickedDate(todayKey);
-      setCurrentMonth(today);
+      setCurrentMonth(new Date()); // Use current date for month view
     }
   }, [showCopyModal]);
 
