@@ -14,6 +14,7 @@ const BottomNav = () => {
     { name: "Workouts", path: "/workouts", icon: "💪" },
     { name: "Deficit", path: "/calories", icon: "🔥" },
     { name: "Insights", path: "/insights", icon: "📈" },
+    { name: "Profile", path: "/profile", icon: "👤" },
   ];
 
   // Normalize pathname to handle basePath and trailing slashes
