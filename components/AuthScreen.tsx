@@ -15,6 +15,7 @@ const AuthScreen = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [status, setStatus] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showGuestWarning, setShowGuestWarning] = useState(false);
 
   const handleSubmit = async () => {
     setStatus("");
@@ -267,13 +268,69 @@ const AuthScreen = () => {
 
         <div className="mt-4 text-center">
           <button
-            onClick={continueAsGuest}
+            onClick={() => setShowGuestWarning(true)}
             className="text-sm text-white/70 hover:text-white"
           >
             Continue as Guest
           </button>
         </div>
       </motion.div>
+
+      {/* Guest Warning Modal */}
+      {showGuestWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-[#0a0a0a] rounded-3xl p-6 lg:p-8 border border-white/20 max-w-md w-full shadow-2xl"
+          >
+            <div className="text-center mb-6">
+              <div className="text-3xl mb-3">⚠️</div>
+              <h3 className="text-xl font-bold mb-2">Guest Mode Warning</h3>
+            </div>
+
+            <div className="space-y-3 mb-6 text-sm text-white/80">
+              <p>
+                <strong className="text-white">Important:</strong> When using guest mode, your data will <strong className="text-yellow-400">only be saved locally</strong> on this device.
+              </p>
+              <p>
+                This means:
+              </p>
+              <ul className="list-disc list-inside space-y-2 text-white/70 ml-2">
+                <li>Your data will <strong className="text-white">not sync</strong> across devices</li>
+                <li>If you clear browser data or switch devices, your progress will be <strong className="text-red-400">lost</strong></li>
+                <li>You won't be able to access your data from other devices</li>
+                <li>Data is stored only in your browser's local storage</li>
+              </ul>
+              <p className="pt-2">
+                <strong className="text-white">To save your data securely and access it from any device,</strong> please create an account.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  setShowGuestWarning(false);
+                  setMode("signup");
+                  setStatus("");
+                }}
+                className="w-full py-3 bg-white text-[#0a0a0a] rounded-xl font-semibold hover:bg-white/90 transition-colors"
+              >
+                Create Account
+              </button>
+              <button
+                onClick={() => {
+                  setShowGuestWarning(false);
+                  continueAsGuest();
+                }}
+                className="w-full py-3 bg-white/5 border border-white/10 rounded-xl font-medium hover:bg-white/10 transition-colors text-sm"
+              >
+                Continue as Guest Anyway
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
