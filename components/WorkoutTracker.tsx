@@ -133,19 +133,19 @@ const WorkoutTracker = () => {
   };
 
   return (
-    <div className="max-w-md lg:max-w-7xl mx-auto min-h-screen bg-[#0a0a0a]">
+    <div className="max-w-md lg:max-w-4xl xl:max-w-5xl mx-auto min-h-screen bg-[#0a0a0a]">
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="pt-12 pb-6 px-4 sm:px-6 lg:px-8"
+        className="pt-12 pb-6 px-4 sm:px-6 lg:px-8 text-center lg:text-left"
       >
         <h1 className="text-3xl lg:text-4xl font-bold mb-4">Workout Tracker</h1>
 
         {/* Day Selector */}
         <div className="mb-6">
-          <div className="text-white/60 text-sm mb-3">Select Day</div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="text-white/60 text-sm mb-3 text-center lg:text-left">Select Day</div>
+          <div className="flex gap-2 flex-wrap justify-center lg:justify-start">
             {days.map((day, index) => (
               <button
                 key={day}
@@ -162,13 +162,13 @@ const WorkoutTracker = () => {
           </div>
         </div>
 
-        <div className="text-white/60 text-sm mb-2">
+        <div className="text-white/60 text-sm mb-2 text-center lg:text-left">
           {days[currentDayIndex]} - {workoutSchedule[currentDayIndex]}
         </div>
       </motion.header>
 
       {/* Add Exercise Button */}
-      <div className="px-4 sm:px-6 lg:px-8 mb-6">
+      <div className="px-4 sm:px-6 lg:px-8 mb-6 flex justify-center lg:justify-start">
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
