@@ -171,7 +171,7 @@ const Dashboard = () => {
               <div className="text-xs sm:text-sm text-white/50 mb-1">7-Day Avg</div>
               <div
                 className={`text-base sm:text-lg lg:text-xl font-semibold ${
-                  insights.weeklyAverage >= 0 ? "text-green-400" : "text-red-400"
+                  insights.weeklyAverage <= 0 ? "text-green-400" : "text-red-400"
                 }`}
               >
                 {insights.weeklyAverage >= 0 ? "+" : ""}
