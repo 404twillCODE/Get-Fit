@@ -47,6 +47,17 @@ const Insights = () => {
     loadData();
   }, []);
 
+  // When modal opens, ensure today's date is selected and set as last clicked
+  useEffect(() => {
+    if (showCopyModal) {
+      const today = new Date();
+      const todayKey = today.toISOString().split("T")[0];
+      setSelectedDates(new Set([todayKey]));
+      setLastClickedDate(todayKey);
+      setCurrentMonth(today);
+    }
+  }, [showCopyModal]);
+
   const stats = useMemo(() => {
     const sortedEntries = [...entries].sort((a, b) =>
       b.date.localeCompare(a.date)
