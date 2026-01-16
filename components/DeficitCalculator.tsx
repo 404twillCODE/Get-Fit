@@ -134,13 +134,28 @@ const DeficitCalculator = () => {
         deficitEntries: updatedEntries,
       }));
       
-      setEntries(updatedEntries);
-      setCurrentEntry(newEntry);
-      calculateStats();
+      // Reload entries from storage to ensure we have the latest data
+      const refreshedData = await loadAppData();
+      setEntries(refreshedData.deficitEntries);
       
-      // Reload today's data to show saved values in inputs (don't clear them)
-      // This ensures the input fields display what was just saved
-      loadTodayData();
+      // Now load today's data with the refreshed entries
+      const refreshedEntry = refreshedData.deficitEntries.find((e) => e.date === dateKey);
+      if (refreshedEntry) {
+        setCurrentEntry(refreshedEntry);
+        if (refreshedEntry.nutrition) {
+          setNutritionData({
+            calories: refreshedEntry.nutrition.calories || 0,
+            fat: refreshedEntry.nutrition.fat || 0,
+            carbs: refreshedEntry.nutrition.carbs || 0,
+            protein: refreshedEntry.nutrition.protein || 0,
+          });
+        }
+        if (refreshedEntry.fitness) {
+          setFitnessData(refreshedEntry.fitness);
+        }
+      }
+      
+      calculateStats();
       
       // Show success message
       setSaveMessage("✓ Data saved!");
