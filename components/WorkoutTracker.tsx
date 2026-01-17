@@ -534,7 +534,9 @@ const WorkoutTracker = () => {
                     <div className="flex-1 min-w-0">
                       <h3 className="text-lg lg:text-xl font-semibold mb-1 truncate">{exercise.name}</h3>
                       <span className="text-xs lg:text-sm text-white/60 bg-white/5 px-2 py-1 rounded inline-block">
-                        {categories.find((c) => c.value === exercise.category)?.label || exercise.category}
+                        {exercise.categories && exercise.categories.length > 0
+                          ? exercise.categories.map((cat) => categories.find((c) => c.value === cat)?.label || cat).join(", ")
+                          : "Uncategorized"}
                   </span>
                 </div>
                     <div className="flex gap-2 ml-2 flex-shrink-0">
