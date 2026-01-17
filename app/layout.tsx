@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import AuthGate from "@/components/AuthGate";
+import InstallPrompt from "@/components/InstallPrompt";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const withBasePath = (path: string) => `${basePath}${path}`;
@@ -13,7 +14,13 @@ export const metadata: Metadata = {
   keywords: ["fitness", "wellness", "calories", "workouts", "deficit"],
   manifest: withBasePath("/manifest.webmanifest"),
   icons: {
-    icon: [{ url: withBasePath("/icon.svg"), type: "image/svg+xml" }],
+    icon: [
+      { url: withBasePath("/logo/logo192.png"), sizes: "192x192", type: "image/png" },
+      { url: withBasePath("/logo/logo512.png"), sizes: "512x512", type: "image/png" },
+      { url: withBasePath("/logo/logo512.svg"), type: "image/svg+xml" },
+    ],
+    apple: [{ url: withBasePath("/logo/logo180.png"), sizes: "180x180", type: "image/png" }],
+    shortcut: [{ url: withBasePath("/logo/logo192.png"), sizes: "192x192", type: "image/png" }],
   },
   appleWebApp: {
     capable: true,
@@ -39,7 +46,10 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className="min-h-screen bg-[#0a0a0a] text-white antialiased">
         <AuthProvider>
-          <AuthGate>{children}</AuthGate>
+          <AuthGate>
+            {children}
+            <InstallPrompt />
+          </AuthGate>
         </AuthProvider>
       </body>
     </html>
