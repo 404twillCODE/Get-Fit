@@ -231,20 +231,24 @@ const DeficitCalculator = () => {
   const canGoNext = formatDateKey(currentDate) < formatDateKey(new Date());
 
   return (
-    <div className="max-w-md lg:max-w-7xl mx-auto min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen bg-[#0a0a0a]">
+      <div className="max-w-md lg:max-w-6xl mx-auto">
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="pt-12 pb-6 px-4 sm:px-6 lg:px-8"
+        className="pt-10 pb-6 sm:pb-8 px-4 sm:px-6 lg:px-8"
       >
-        <h1 className="text-3xl lg:text-4xl font-bold mb-6">Deficit Calculator</h1>
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-2">Deficit Calculator</h1>
+        <p className="text-white/60 text-xs sm:text-sm lg:text-base mb-6">
+          Track calories eaten and burned for each day.
+        </p>
 
         {/* Date Navigation */}
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={() => changeDate(-1)}
-            className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xl font-bold hover:bg-white/10 transition-colors"
+            className="w-11 h-11 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xl font-bold hover:bg-white/10 transition-colors"
           >
             ‹
           </button>
@@ -263,7 +267,7 @@ const DeficitCalculator = () => {
           <button
             onClick={() => changeDate(1)}
             disabled={!canGoNext}
-            className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xl font-bold hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="w-11 h-11 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xl font-bold hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             ›
           </button>
@@ -271,7 +275,7 @@ const DeficitCalculator = () => {
         {!isToday && (
           <button
             onClick={goToToday}
-            className="w-full py-2 text-sm bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors"
+            className="w-full py-2.5 text-sm bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors"
           >
             Go to Today
           </button>
@@ -284,9 +288,9 @@ const DeficitCalculator = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/5 rounded-2xl p-5 lg:p-6 border border-white/10"
+          className="bg-gradient-to-br from-white/6 via-white/5 to-white/0 rounded-3xl p-5 lg:p-7 border border-white/10"
         >
-          <div className="text-white/60 text-sm lg:text-base mb-4">🍎 Nutrition Data</div>
+          <div className="text-white/60 text-xs sm:text-sm lg:text-base mb-4">🍎 Nutrition</div>
           
           {/* Calories - Main Focus */}
           <div className="mb-4">
@@ -297,13 +301,13 @@ const DeficitCalculator = () => {
               onChange={(e) =>
                 setNutritionData({ ...nutritionData, calories: parseInt(e.target.value) || 0 })
               }
-              className="w-full px-4 py-3 lg:py-4 bg-white/10 border-2 border-white/20 rounded-xl text-white text-lg lg:text-xl font-semibold focus:border-white/40 focus:outline-none transition-colors"
+              className="w-full px-4 py-3 lg:py-4 bg-white/10 border border-white/20 rounded-2xl text-white text-2xl font-semibold focus:border-white/40 focus:outline-none transition-colors"
               placeholder="Enter calories"
             />
           </div>
 
           {/* Carbs, Protein, Fat - Secondary/Optional */}
-          <div className="grid grid-cols-3 gap-2 lg:gap-3 opacity-60">
+          <div className="grid grid-cols-3 gap-2 lg:gap-3 opacity-70">
             <div>
               <label className="text-white/40 text-xs lg:text-sm mb-1 block">Carbs (g)</label>
               <input
@@ -313,7 +317,7 @@ const DeficitCalculator = () => {
                 onChange={(e) =>
                   setNutritionData({ ...nutritionData, carbs: parseFloat(e.target.value) || 0 })
                 }
-                className="w-full px-2 py-1.5 lg:py-2 bg-white/5 border border-white/10 rounded-lg text-white/80 text-xs lg:text-sm focus:border-white/20 focus:outline-none transition-colors"
+                className="w-full px-2.5 py-2 bg-white/5 border border-white/10 rounded-xl text-white/80 text-xs lg:text-sm focus:border-white/20 focus:outline-none transition-colors"
                 placeholder="Carbs"
               />
             </div>
@@ -326,7 +330,7 @@ const DeficitCalculator = () => {
                 onChange={(e) =>
                   setNutritionData({ ...nutritionData, protein: parseFloat(e.target.value) || 0 })
                 }
-                className="w-full px-2 py-1.5 lg:py-2 bg-white/5 border border-white/10 rounded-lg text-white/80 text-xs lg:text-sm focus:border-white/20 focus:outline-none transition-colors"
+                className="w-full px-2.5 py-2 bg-white/5 border border-white/10 rounded-xl text-white/80 text-xs lg:text-sm focus:border-white/20 focus:outline-none transition-colors"
                 placeholder="Protein"
               />
             </div>
@@ -339,7 +343,7 @@ const DeficitCalculator = () => {
                 onChange={(e) =>
                   setNutritionData({ ...nutritionData, fat: parseFloat(e.target.value) || 0 })
                 }
-                className="w-full px-2 py-1.5 lg:py-2 bg-white/5 border border-white/10 rounded-lg text-white/80 text-xs lg:text-sm focus:border-white/20 focus:outline-none transition-colors"
+                className="w-full px-2.5 py-2 bg-white/5 border border-white/10 rounded-xl text-white/80 text-xs lg:text-sm focus:border-white/20 focus:outline-none transition-colors"
                 placeholder="Fat"
               />
             </div>
@@ -351,16 +355,16 @@ const DeficitCalculator = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white/5 rounded-2xl p-5 lg:p-6 border border-white/10"
+          className="bg-gradient-to-br from-white/6 via-white/5 to-white/0 rounded-3xl p-5 lg:p-7 border border-white/10"
         >
-          <div className="text-white/60 text-sm lg:text-base mb-3 lg:mb-4">⌚ Fitness Tracker</div>
+          <div className="text-white/60 text-xs sm:text-sm lg:text-base mb-3 lg:mb-4">⌚ Fitness</div>
           <input
             type="number"
             value={fitnessData.totalCalories || ""}
             onChange={(e) =>
               setFitnessData({ ...fitnessData, totalCalories: parseInt(e.target.value) || 0 })
             }
-            className="w-full px-4 py-3 lg:py-4 bg-white/10 border border-white/20 rounded-xl text-white text-base lg:text-lg focus:border-white/40 focus:outline-none transition-colors"
+            className="w-full px-4 py-3 lg:py-4 bg-white/10 border border-white/20 rounded-2xl text-white text-lg font-semibold focus:border-white/40 focus:outline-none transition-colors"
             placeholder="Enter total calories burned"
           />
         </motion.div>
@@ -375,7 +379,7 @@ const DeficitCalculator = () => {
               animate={{ opacity: 1, y: 0 }}
               className="bg-white/5 rounded-2xl p-4 border border-white/10"
             >
-              <div className="text-white/60 text-xs mb-2">Nutrition Data</div>
+              <div className="text-white/60 text-xs mb-2">Nutrition Summary</div>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>Calories: <span className="text-white font-semibold">{nutritionData.calories}</span></div>
                 {nutritionData.fat > 0 && <div>Fat: <span className="text-white">{nutritionData.fat}g</span></div>}
@@ -391,7 +395,7 @@ const DeficitCalculator = () => {
               animate={{ opacity: 1, y: 0 }}
               className="bg-white/5 rounded-2xl p-4 border border-white/10"
             >
-              <div className="text-white/60 text-xs mb-2">Fitness Data</div>
+              <div className="text-white/60 text-xs mb-2">Fitness Summary</div>
               <div className="text-sm">
                 <div>Total Calories: <span className="text-white font-semibold">{fitnessData.totalCalories}</span></div>
               </div>
@@ -401,7 +405,7 @@ const DeficitCalculator = () => {
       )}
 
       {/* Save Button */}
-      <div className="px-6 mb-6">
+      <div className="px-4 sm:px-6 lg:px-8 mb-6">
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
@@ -430,7 +434,7 @@ const DeficitCalculator = () => {
       </div>
 
       {/* Stats Section */}
-      <div className="px-6 mb-6">
+      <div className="px-4 sm:px-6 lg:px-8 mb-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -477,7 +481,7 @@ const DeficitCalculator = () => {
       </div>
 
       {/* History */}
-      <div className="px-6 pb-6">
+      <div className="px-4 sm:px-6 lg:px-8 pb-6">
         <h2 className="text-xl font-bold mb-4">Recent Days</h2>
         <div className="space-y-3">
           {entries.slice(0, 7).map((entry, index) => (
@@ -490,7 +494,7 @@ const DeficitCalculator = () => {
                 setCurrentDate(new Date(entry.date));
                 window.scrollTo({ top: 0, behavior: "smooth" });
               }}
-              className="bg-white/5 rounded-xl p-4 border border-white/10 active:bg-white/10 transition-colors cursor-pointer"
+              className="bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer"
             >
               <div className="flex justify-between items-center">
                 <div>
@@ -586,6 +590,7 @@ const DeficitCalculator = () => {
           </>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 };

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { loadAppData, updateAppData } from "@/lib/dataStore";
 import { formatDateKey } from "@/lib/storage";
 
@@ -55,20 +55,30 @@ const WorkoutTracker = () => {
     loadDayWorkouts();
   }, []);
 
-  const checkWorkoutSetup = async () => {
-    try {
-      const data = await loadAppData();
-      const hasExercises = data.savedWorkouts.some((day) => Array.isArray(day) && day.length > 0);
-      const hasSchedule = data.workoutSchedule.some((day) => day !== "Rest Day");
-      
-      // Show setup if no exercises and no schedule, or if setup not marked complete
-      if (!data.workoutSetupComplete && (!hasExercises || !hasSchedule)) {
-        setShowSetup(true);
+    const checkWorkoutSetup = async () => {
+      try {
+        const data = await loadAppData();
+        const hasExercises = data.savedWorkouts.some(
+          (day) => Array.isArray(day) && day.length > 0
+        );
+        const hasSchedule = data.workoutSchedule.some(
+          (day) => day !== "Rest Day"
+        );
+        
+        // If no exercises, always show setup again
+        if (!hasExercises) {
+          setShowSetup(true);
+          return;
+        }
+        
+        // Show setup if schedule is empty or setup not marked complete
+        if (!data.workoutSetupComplete && !hasSchedule) {
+          setShowSetup(true);
+        }
+      } catch (error) {
+        console.error("Error checking workout setup:", error);
       }
-    } catch (error) {
-      console.error("Error checking workout setup:", error);
-    }
-  };
+    };
 
   useEffect(() => {
     loadDayWorkouts();
@@ -99,7 +109,7 @@ const WorkoutTracker = () => {
 
   const loadDayWorkouts = async () => {
     try {
-      const data = await loadAppData();
+    const data = await loadAppData();
       // Get workouts for current day directly (they're already organized by day)
       const dayWorkouts = (data.savedWorkouts[currentDayIndex] || []) as any[];
       
@@ -183,7 +193,7 @@ const WorkoutTracker = () => {
     try {
       // Add timeout protection
       const savePromise = (async () => {
-        if (editingExercise) {
+    if (editingExercise) {
           // Update existing exercise - remove from all days first, then add to new days
           await updateAppData((current) => {
             const savedWorkouts: Exercise[][] = Array.from({ length: 7 }, () => []);
@@ -213,8 +223,8 @@ const WorkoutTracker = () => {
             
             return { ...current, savedWorkouts };
           });
-          setEditingExercise(null);
-        } else {
+      setEditingExercise(null);
+    } else {
           // Add new exercise - add it to the appropriate days
           await updateAppData((current) => {
             const savedWorkouts = [...current.savedWorkouts];
@@ -243,7 +253,7 @@ const WorkoutTracker = () => {
 
       await Promise.race([savePromise, timeoutPromise]);
       
-      setShowModal(false);
+    setShowModal(false);
     } catch (error) {
       console.error("Error saving exercise:", error);
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
@@ -404,7 +414,7 @@ const WorkoutTracker = () => {
 
         {/* Day Navigation */}
         <div className="mb-6 flex items-center justify-center gap-4">
-          <button
+              <button
             onClick={() => navigateDay("prev")}
             className="w-12 h-12 rounded-full bg-white/10 border-2 border-white/20 hover:bg-white/20 hover:border-white/40 active:scale-95 transition-all flex items-center justify-center"
             aria-label="Previous day"
@@ -422,13 +432,13 @@ const WorkoutTracker = () => {
             >
               <path d="M15 18l-6-6 6-6" />
             </svg>
-          </button>
+              </button>
           <div className="text-center min-w-[200px]">
             <div className="text-white/60 text-sm mb-1">{getDateLabel()}</div>
             <div className="text-xl font-semibold">
               {days[currentDayIndex]} - {workoutSchedule[currentDayIndex]}
-            </div>
           </div>
+        </div>
           <button
             onClick={() => navigateDay("next")}
             className="w-12 h-12 rounded-full bg-white/10 border-2 border-white/20 hover:bg-white/20 hover:border-white/40 active:scale-95 transition-all flex items-center justify-center"
@@ -511,45 +521,45 @@ const WorkoutTracker = () => {
           </div>
         ) : (
           <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0 lg:max-w-4xl lg:mx-auto">
-            <AnimatePresence>
-              {workouts.map((exercise) => (
-                <motion.div
-                  key={exercise.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
+        <AnimatePresence>
+          {workouts.map((exercise) => (
+            <motion.div
+              key={exercise.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, x: -20 }}
                   className="bg-white/5 rounded-2xl p-5 lg:p-6 border border-white/10"
-                >
-                  <div className="flex justify-between items-start mb-4">
+            >
+              <div className="flex justify-between items-start mb-4">
                     <div className="flex-1 min-w-0">
                       <h3 className="text-lg lg:text-xl font-semibold mb-1 truncate">{exercise.name}</h3>
                       <span className="text-xs lg:text-sm text-white/60 bg-white/5 px-2 py-1 rounded inline-block">
                         {categories.find((c) => c.value === exercise.category)?.label || exercise.category}
-                      </span>
-                    </div>
+                  </span>
+                </div>
                     <div className="flex gap-2 ml-2 flex-shrink-0">
-                      <button
-                        onClick={() => {
-                          setEditingExercise(exercise);
-                          setShowModal(true);
-                        }}
+                  <button
+                    onClick={() => {
+                      setEditingExercise(exercise);
+                      setShowModal(true);
+                    }}
                         className="text-white/60 hover:text-white text-lg lg:text-xl transition-colors"
                         aria-label="Edit exercise"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => removeExercise(exercise.id)}
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    onClick={() => removeExercise(exercise.id)}
                         className="text-red-400 hover:text-red-300 text-lg lg:text-xl transition-colors"
                         aria-label="Delete exercise"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  </div>
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </div>
 
                   {exercise.sets && exercise.sets.length > 0 && (
-                    <div className="space-y-2">
+                <div className="space-y-2">
                       <div className="flex justify-between items-center mb-2">
                         <div className="text-white/60 text-sm">Sets</div>
                         <button
@@ -559,47 +569,47 @@ const WorkoutTracker = () => {
                           Select All
                         </button>
                       </div>
-                      {exercise.sets.map((set, index) => (
-                        <div
-                          key={index}
-                          className="flex justify-between items-center py-2 border-b border-white/5 last:border-0"
-                        >
-                          <div className="flex items-center gap-4">
-                            <span className="text-white/60 text-sm w-8">
-                              Set {set.setNumber}
-                            </span>
-                            <span className="text-white/80">
-                              {set.reps} reps × {set.weight > 0 ? `${set.weight} lbs` : "bodyweight"}
-                            </span>
+                  {exercise.sets.map((set, index) => (
+                    <div
+                      key={index}
+                      className="flex justify-between items-center py-2 border-b border-white/5 last:border-0"
+                    >
+                      <div className="flex items-center gap-4">
+                        <span className="text-white/60 text-sm w-8">
+                          Set {set.setNumber}
+                        </span>
+                        <span className="text-white/80">
+                          {set.reps} reps × {set.weight > 0 ? `${set.weight} lbs` : "bodyweight"}
+                        </span>
                             {set.breakTime && (
                               <span className="text-xs text-white/40">
                                 ({formatTime(set.breakTime)} break)
                               </span>
                             )}
-                          </div>
-                          <button
+                      </div>
+                      <button
                             onClick={() => toggleSetComplete(exercise.id, index, set.breakTime)}
-                            className={`w-6 h-6 rounded border-2 flex items-center justify-center ${
-                              set.completed
-                                ? "bg-green-400 border-green-400"
-                                : "border-white/30"
-                            }`}
-                          >
-                            {set.completed && "✓"}
-                          </button>
-                        </div>
-                      ))}
+                        className={`w-6 h-6 rounded border-2 flex items-center justify-center ${
+                          set.completed
+                            ? "bg-green-400 border-green-400"
+                            : "border-white/30"
+                        }`}
+                      >
+                        {set.completed && "✓"}
+                      </button>
                     </div>
-                  )}
+                  ))}
+                </div>
+              )}
 
-                  {exercise.notes && (
-                    <div className="mt-3 pt-3 border-t border-white/5 text-sm text-white/60">
-                      {exercise.notes}
-                    </div>
-                  )}
-                </motion.div>
-              ))}
-            </AnimatePresence>
+              {exercise.notes && (
+                <div className="mt-3 pt-3 border-t border-white/5 text-sm text-white/60">
+                  {exercise.notes}
+                </div>
+              )}
+            </motion.div>
+          ))}
+        </AnimatePresence>
           </div>
         )}
       </div>
@@ -670,7 +680,7 @@ const ExerciseModal = ({
   currentDayIndex,
 }: ExerciseModalProps) => {
   const [name, setName] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<ExerciseCategory[]>(["legs"]);
+  const [selectedCategories, setSelectedCategories] = useState<ExerciseCategory[]>([]);
   const [sets, setSets] = useState(3);
   const [reps, setReps] = useState(10);
   const [weight, setWeight] = useState("");
@@ -678,6 +688,10 @@ const ExerciseModal = ({
   const [selectedDays, setSelectedDays] = useState<number[]>([currentDayIndex]);
   const [notes, setNotes] = useState("");
   const [isSavingExercise, setIsSavingExercise] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
+  const [isNameFocused, setIsNameFocused] = useState(false);
+  const clickingCategoryRef = useRef(false);
 
   const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const categories = [
@@ -691,6 +705,162 @@ const ExerciseModal = ({
     { value: "full_body", label: "Full Body" },
   ];
 
+  // Exercise database with Planet Fitness equipment and exercises
+  const exerciseDatabase: Record<ExerciseCategory, string[]> = {
+    chest: [
+      "Bench Press", "Incline Bench Press", "Decline Bench Press", "Dumbbell Press",
+      "Incline Dumbbell Press", "Decline Dumbbell Press", "Cable Fly", "Pec Deck Machine",
+      "Push-ups", "Dips", "Chest Press Machine", "Smith Machine Bench Press",
+      "Chest Fly Machine", "Pec Deck", "Cable Crossover", "Dumbbell Flyes",
+      "Incline Cable Fly", "Decline Cable Fly", "Flat Chest Press Machine",
+      "Incline Chest Press Machine", "Decline Chest Press Machine", "Cable Chest Press",
+      "Smith Machine Incline Press", "Smith Machine Decline Press", "Dumbbell Pullover",
+      "Cable Pullover", "Push-up Variations", "Diamond Push-ups", "Wide Push-ups",
+      "Incline Push-ups", "Decline Push-ups", "Chest Dips", "Assisted Dips"
+    ],
+    back: [
+      "Pull-ups", "Lat Pulldown", "Barbell Row", "Dumbbell Row", "Cable Row",
+      "Seated Row Machine", "T-Bar Row", "Bent Over Row", "One-Arm Row",
+      "Wide Grip Pulldown", "Close Grip Pulldown", "Reverse Grip Pulldown",
+      "Reverse Fly", "Face Pull", "Shrugs", "Deadlift", "Rack Pull",
+      "Hyperextension", "Cable Lat Pulldown", "Cable High Row", "Cable Low Row",
+      "Seated Cable Row", "Standing Cable Row", "Wide Grip Cable Row",
+      "Close Grip Cable Row", "Cable Face Pull", "Cable Reverse Fly",
+      "Smith Machine Row", "Smith Machine Shrugs", "Dumbbell Shrugs",
+      "Barbell Shrugs", "Cable Shrugs", "Hyperextension Machine",
+      "Back Extension Machine", "Assisted Pull-ups", "Lat Pulldown Machine",
+      "Seated Row Machine", "Cable Reverse Fly", "Cable Upright Row"
+    ],
+    shoulders: [
+      "Overhead Press", "Dumbbell Shoulder Press", "Lateral Raise", "Front Raise",
+      "Rear Delt Fly", "Arnold Press", "Cable Lateral Raise", "Face Pull",
+      "Upright Row", "Shrugs", "Reverse Fly", "Shoulder Press Machine",
+      "Pike Push-ups", "Handstand Push-ups", "Cable Rear Delt Fly",
+      "Lateral Raise Machine", "Rear Deltoid Machine", "Shoulder Press Machine",
+      "Smith Machine Shoulder Press", "Cable Shoulder Press", "Dumbbell Lateral Raise",
+      "Cable Front Raise", "Barbell Front Raise", "Dumbbell Front Raise",
+      "Cable Upright Row", "Barbell Upright Row", "Dumbbell Upright Row",
+      "Reverse Pec Deck", "Rear Delt Machine", "Cable Lateral Raise",
+      "Dumbbell Rear Delt Fly", "Cable Rear Delt Fly", "Face Pull Machine",
+      "Shoulder Press Machine", "Overhead Press Machine", "Pike Push-ups",
+      "Wall Handstand Push-ups", "Dumbbell Arnold Press", "Cable Arnold Press"
+    ],
+    legs: [
+      "Squats", "Leg Press", "Leg Extension", "Leg Curl", "Romanian Deadlift",
+      "Bulgarian Split Squat", "Lunges", "Walking Lunges", "Calf Raises",
+      "Hack Squat", "Smith Machine Squat", "Goblet Squat", "Step-ups",
+      "Leg Press Machine", "Seated Calf Raise", "Standing Calf Raise", "Hip Thrust",
+      "Leg Extension Machine", "Seated Leg Curl", "Lying Leg Curl",
+      "Standing Leg Curl", "Hack Squat Machine", "Smith Machine Lunges",
+      "Dumbbell Lunges", "Barbell Lunges", "Reverse Lunges", "Side Lunges",
+      "Curtsy Lunges", "Jump Lunges", "Leg Press 45 Degree", "Leg Press Horizontal",
+      "Seated Leg Press", "Calf Raise Machine", "Seated Calf Raise Machine",
+      "Standing Calf Raise Machine", "Smith Machine Calf Raises", "Hip Abductor Machine",
+      "Hip Adductor Machine", "Glute Kickback Machine", "Leg Press Machine",
+      "Smith Machine Leg Press", "Dumbbell Step-ups", "Box Step-ups",
+      "Romanian Deadlift Machine", "Smith Machine RDL", "Dumbbell RDL",
+      "Barbell RDL", "Good Mornings", "Smith Machine Good Mornings",
+      "Hip Thrust Machine", "Glute Bridge", "Single Leg Press", "Pistol Squats"
+    ],
+    arms: [
+      "Bicep Curl", "Hammer Curl", "Tricep Extension", "Tricep Dips",
+      "Cable Curl", "Preacher Curl", "Concentration Curl", "Overhead Tricep Extension",
+      "Close Grip Bench Press", "Skull Crushers", "Cable Tricep Pushdown",
+      "Barbell Curl", "Dumbbell Curl", "Tricep Kickback", "Rope Cable Curl",
+      "Bicep Curl Machine", "Preacher Curl Machine", "Tricep Extension Machine",
+      "Cable Bicep Curl", "Cable Hammer Curl", "Cable Preacher Curl",
+      "Cable Concentration Curl", "Dumbbell Hammer Curl", "Barbell Hammer Curl",
+      "Cable Tricep Extension", "Overhead Cable Tricep Extension", "Dumbbell Tricep Extension",
+      "Dumbbell Overhead Extension", "Cable Overhead Extension", "Rope Tricep Pushdown",
+      "Straight Bar Tricep Pushdown", "Close Grip Cable Press", "Smith Machine Close Grip Press",
+      "Dumbbell Skull Crushers", "Cable Skull Crushers", "Tricep Dips Machine",
+      "Assisted Tricep Dips", "Cable Tricep Kickback", "Dumbbell Tricep Kickback",
+      "Reverse Grip Cable Curl", "Cable Reverse Curl", "Barbell Reverse Curl",
+      "Dumbbell Reverse Curl", "21s Bicep Curls", "Cable 21s", "Spider Curls",
+      "Cable Spider Curls", "Incline Dumbbell Curl", "Standing Cable Curl",
+      "Seated Cable Curl", "Cable Rope Hammer Curl"
+    ],
+    core: [
+      "Plank", "Crunches", "Sit-ups", "Russian Twists", "Leg Raises",
+      "Mountain Climbers", "Bicycle Crunches", "Dead Bug", "Hollow Hold",
+      "Ab Wheel", "Cable Crunch", "Hanging Leg Raise", "Side Plank",
+      "Reverse Crunch", "Flutter Kicks", "V-Ups", "Dragon Flag",
+      "Ab Crunch Machine", "Abdominal Crunch Machine", "Torso Rotation Machine",
+      "Roman Chair", "Roman Chair Sit-ups", "Roman Chair Leg Raises",
+      "Cable Crunch", "Cable Woodchopper", "Cable Side Crunch", "Cable Reverse Crunch",
+      "Cable Leg Raise", "Hanging Knee Raises", "Hanging Leg Raises",
+      "Hanging Windshield Wipers", "Plank Variations", "Side Plank",
+      "Reverse Plank", "Plank to Pike", "Plank Jacks", "Mountain Climbers",
+      "Bicycle Crunches", "Reverse Crunches", "Flutter Kicks", "Scissor Kicks",
+      "Dead Bug", "Hollow Hold", "V-Ups", "Dragon Flag", "Ab Wheel Rollout",
+      "Cable Ab Crunch", "Cable Oblique Crunch", "Russian Twists", "Weighted Russian Twists",
+      "Medicine Ball Crunches", "Stability Ball Crunches", "Decline Crunches",
+      "Incline Crunches", "Reverse Crunch Machine", "Ab Coaster", "Ab Crunch Bench"
+    ],
+    cardio: [
+      "Running", "Treadmill", "Elliptical", "Bike", "Rowing Machine",
+      "Stair Climber", "Jump Rope", "Burpees", "High Knees", "Jumping Jacks",
+      "Boxing", "Swimming", "Cycling", "HIIT", "Sprint Intervals",
+      "Treadmill Walking", "Treadmill Jogging", "Treadmill Running", "Treadmill Incline",
+      "Elliptical Trainer", "Elliptical Cross Trainer", "ARC Trainer",
+      "Stationary Bike", "Upright Bike", "Recumbent Bike", "Rowing Machine",
+      "Concept2 Rower", "Stair Climber", "StepMill", "Stepper Machine",
+      "Recumbent Stepper", "Low Impact Stepper", "Jump Rope", "Jumping Rope",
+      "Burpees", "High Knees", "Jumping Jacks", "Mountain Climbers",
+      "Boxing Bag", "Heavy Bag", "Speed Bag", "Swimming", "Pool Swimming",
+      "Cycling", "Indoor Cycling", "HIIT Cardio", "Sprint Intervals",
+      "Tabata", "Circuit Training", "Interval Training", "Steady State Cardio",
+      "LISS Cardio", "Walking", "Power Walking", "Jogging", "Running",
+      "Treadmill Intervals", "Elliptical Intervals", "Bike Intervals",
+      "Rowing Intervals", "Stair Climber Intervals", "Jump Rope Intervals"
+    ],
+    full_body: [
+      "Burpees", "Thrusters", "Clean and Press", "Kettlebell Swing",
+      "Turkish Get-up", "Man Makers", "Bear Crawl", "Mountain Climbers",
+      "Jump Squats", "Box Jumps", "Battle Ropes", "Sled Push",
+      "Full Body Circuit", "Compound Movements", "Clean and Jerk",
+      "Snatch", "Power Clean", "Deadlift", "Squat to Press", "Dumbbell Thrusters",
+      "Barbell Thrusters", "Kettlebell Thrusters", "Turkish Get-ups",
+      "Man Makers", "Bear Crawl", "Crab Walk", "Duck Walk", "Jump Squats",
+      "Box Jumps", "Plyometric Box Jumps", "Battle Ropes", "Sled Push",
+      "Farmers Walk", "Suitcase Carry", "Overhead Carry", "Rowing Machine",
+      "Full Body Rowing", "Cable Full Body", "Smith Machine Full Body",
+      "Circuit Training", "HIIT Full Body", "Tabata Full Body",
+      "Full Body Dumbbell", "Full Body Barbell", "Full Body Kettlebell"
+    ],
+  };
+
+  // Get example exercises based on selected categories
+  const getExampleExercises = (): string[] => {
+    if (selectedCategories.length === 0) return [];
+    const examples: string[] = [];
+    selectedCategories.forEach((cat) => {
+      if (exerciseDatabase[cat]) {
+        examples.push(...exerciseDatabase[cat].slice(0, 3));
+      }
+    });
+    return [...new Set(examples)].slice(0, 6);
+  };
+
+  // Filter exercise suggestions based on input
+  useEffect(() => {
+    if (name.trim().length > 0) {
+      const searchTerm = name.toLowerCase();
+      const allExercises = selectedCategories.length > 0
+        ? selectedCategories.flatMap((cat) => exerciseDatabase[cat] || [])
+        : Object.values(exerciseDatabase).flat();
+      
+      const filtered = allExercises
+        .filter((ex) => ex.toLowerCase().includes(searchTerm))
+        .slice(0, 8);
+      
+      setFilteredSuggestions(filtered);
+    } else {
+      setFilteredSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, [name, selectedCategories]);
+
   useEffect(() => {
     if (editingExercise) {
       setName(editingExercise.name);
@@ -700,7 +870,7 @@ const ExerciseModal = ({
       } else if ((editingExercise as any).category) {
         setSelectedCategories([(editingExercise as any).category]);
       } else {
-        setSelectedCategories(["legs"]);
+        setSelectedCategories([]);
       }
       if (editingExercise.sets) {
         setSets(editingExercise.sets.length);
@@ -717,13 +887,15 @@ const ExerciseModal = ({
 
   const resetForm = () => {
     setName("");
-    setSelectedCategories(["legs"]);
+    setSelectedCategories([]);
     setSets(3);
     setReps(10);
     setWeight("");
     setBreakTime(60);
     setSelectedDays([currentDayIndex]);
     setNotes("");
+    setShowSuggestions(false);
+    setFilteredSuggestions([]);
   };
 
   const toggleCategory = (category: ExerciseCategory) => {
@@ -759,18 +931,18 @@ const ExerciseModal = ({
     setIsSavingExercise(true);
     
     try {
-      const exercise: Exercise = {
-        id: editingExercise?.id || Date.now(),
-        name: name.trim(),
-        categories: selectedCategories.length > 0 ? selectedCategories : ["legs"],
-        notes: notes.trim() || undefined,
-        completed: false,
+    const exercise: Exercise = {
+      id: editingExercise?.id || Date.now(),
+      name: name.trim(),
+        categories: selectedCategories.length > 0 ? selectedCategories : [],
+      notes: notes.trim() || undefined,
+      completed: false,
         selectedDays: selectedDays.length > 0 ? selectedDays : undefined,
         sets: Array.from({ length: sets }, (_, i) => ({
-          setNumber: i + 1,
-          reps,
-          weight: parseFloat(weight) || 0,
-          completed: false,
+        setNumber: i + 1,
+        reps,
+        weight: parseFloat(weight) || 0,
+        completed: false,
           breakTime: breakTime > 0 ? breakTime : undefined,
         })),
       };
@@ -783,7 +955,7 @@ const ExerciseModal = ({
 
       await Promise.race([savePromise, timeoutPromise]);
       
-      resetForm();
+    resetForm();
       onClose(); // Close modal after successful save
     } catch (error) {
       console.error("Error saving exercise:", error);
@@ -800,27 +972,27 @@ const ExerciseModal = ({
       {show && (
         <>
           {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
             className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
           />
           
           {/* Modal */}
-          <motion.div
+      <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            onClick={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
             className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm grid place-items-center p-4"
           >
             <div className="bg-[#0a0a0a] rounded-3xl p-5 lg:p-6 border border-white/20 max-w-md w-full shadow-2xl max-h-[85vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-bold mb-1">
-                    {editingExercise ? "Edit Exercise" : "Add Exercise"}
+            {editingExercise ? "Edit Exercise" : "Add Exercise"}
                   </h3>
                   <p className="text-white/60 text-xs">
                     {editingExercise ? "Update exercise details" : "Create a new exercise"}
@@ -830,35 +1002,78 @@ const ExerciseModal = ({
                   onClick={onClose} 
                   className="text-white/60 hover:text-white text-2xl leading-none"
                 >
-                  ×
-                </button>
-              </div>
+            ×
+          </button>
+        </div>
 
               <div className="space-y-3 mb-4">
-                <div>
+                <div className="relative">
                   <label className="text-xs text-white/70 mb-1 block">
-                    Exercise Name
-                  </label>
+              Exercise Name
+            </label>
                   <input
                     type="text"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g., Bench Press"
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      setShowSuggestions(true);
+                    }}
+                    onFocus={() => {
+                      setIsNameFocused(true);
+                      if (name.trim().length > 0) {
+                        setShowSuggestions(true);
+                      }
+                    }}
+                    onBlur={() => {
+                      setIsNameFocused(false);
+                      setShowSuggestions(false);
+                      clickingCategoryRef.current = false;
+                    }}
+                    placeholder="Start typing to see suggestions..."
                     className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
                   />
-                </div>
+                  {showSuggestions && filteredSuggestions.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-[#0a0a0a] border border-white/20 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                      {filteredSuggestions.map((suggestion, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setName(suggestion);
+                            setShowSuggestions(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm text-white hover:bg-white/10 transition-colors"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+          </div>
 
-                <div>
+          <div>
                   <label className="text-xs text-white/70 mb-1 block">
                     Categories (Select Multiple)
-                  </label>
+            </label>
                   <div className="flex gap-2 flex-wrap">
                     {categories.map((cat) => (
                       <button
                         key={cat.value}
                         type="button"
-                        onClick={() => toggleCategory(cat.value as ExerciseCategory)}
-                        className={`px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          clickingCategoryRef.current = true;
+                          setShowSuggestions(false);
+                        }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          toggleCategory(cat.value as ExerciseCategory);
+                          clickingCategoryRef.current = false;
+                        }}
+                        className={`category-button px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
                           selectedCategories.includes(cat.value as ExerciseCategory)
                             ? "bg-white text-[#0a0a0a] font-medium"
                             : "bg-white/5 text-white/70 border border-white/10 hover:bg-white/10"
@@ -873,7 +1088,7 @@ const ExerciseModal = ({
                       Please select at least one category
                     </div>
                   )}
-                </div>
+          </div>
 
                 <div>
                   <label className="text-xs text-white/70 mb-1 block">
@@ -896,39 +1111,39 @@ const ExerciseModal = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
                     <label className="text-xs text-white/70 mb-1 block">Sets</label>
-                    <input
-                      type="number"
-                      value={sets}
-                      onChange={(e) => setSets(parseInt(e.target.value) || 1)}
-                      min="1"
+                  <input
+                    type="number"
+                    value={sets}
+                    onChange={(e) => setSets(parseInt(e.target.value) || 1)}
+                    min="1"
                       className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-white/70 mb-1 block">Reps</label>
-                    <input
-                      type="number"
-                      value={reps}
-                      onChange={(e) => setReps(parseInt(e.target.value) || 1)}
-                      min="1"
-                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-white/70 mb-1 block">Weight (lbs)</label>
-                    <input
-                      type="number"
-                      value={weight}
-                      onChange={(e) => setWeight(e.target.value)}
-                      placeholder="lbs"
-                      step="2.5"
-                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
-                    />
-                  </div>
+                  />
                 </div>
+                <div>
+                    <label className="text-xs text-white/70 mb-1 block">Reps</label>
+                  <input
+                    type="number"
+                    value={reps}
+                    onChange={(e) => setReps(parseInt(e.target.value) || 1)}
+                    min="1"
+                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
+                  />
+                </div>
+                <div>
+                    <label className="text-xs text-white/70 mb-1 block">Weight (lbs)</label>
+                  <input
+                    type="number"
+                    value={weight}
+                    onChange={(e) => setWeight(e.target.value)}
+                    placeholder="lbs"
+                    step="2.5"
+                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
+                  />
+                </div>
+              </div>
 
                 <div>
                   <label className="text-xs text-white/70 mb-1 block">
@@ -975,8 +1190,8 @@ const ExerciseModal = ({
               </div>
             </div>
           </motion.div>
-        </>
-      )}
+            </>
+          )}
     </AnimatePresence>
   );
 };
@@ -1089,6 +1304,14 @@ const WorkoutSetupModal = ({
     if (isSaving) {
       return;
     }
+
+    // Validate that all selected days have at least one workout type
+    const invalidDays = selectedDays.filter((day) => !workoutTypes[day] || workoutTypes[day].length === 0);
+    if (invalidDays.length > 0) {
+      alert("Please select at least one workout type for all selected days.");
+      return;
+    }
+
     setIsSaving(true);
     try {
       const currentData = await loadAppData();
@@ -1097,15 +1320,27 @@ const WorkoutSetupModal = ({
         const types = workoutTypes[day] || [];
         newSchedule[day] = types.length > 0 ? types.join(" + ") : "Workout";
       });
-      await updateAppData((current) => ({
+      
+      const savePromise = updateAppData((current) => ({
         ...current,
         workoutSchedule: newSchedule,
       }));
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Save timeout")), 10000)
+      );
+
+      await Promise.race([savePromise, timeoutPromise]);
       setWorkoutSchedule(newSchedule);
       setStep(3);
     } catch (error) {
       console.error("Error saving workout types:", error);
-      alert("Failed to save workout types. Please try again.");
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      alert(
+        errorMsg.includes("timeout")
+          ? "Save is taking too long. Please try again."
+          : `Failed to save workout types: ${errorMsg}. Please try again.`
+      );
     } finally {
       setIsSaving(false);
     }
@@ -1141,9 +1376,9 @@ const WorkoutSetupModal = ({
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 grid place-items-center px-4 py-12"
           >
-            <div className="w-full max-w-2xl bg-[#0a0a0a] rounded-3xl border border-white/20 p-6 lg:p-8 max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="w-full max-w-2xl bg-[#0a0a0a] rounded-3xl border border-white/20 p-6 lg:p-8 max-h-[70vh] overflow-y-auto shadow-2xl">
               {/* Progress Indicator */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
@@ -1246,7 +1481,11 @@ const WorkoutSetupModal = ({
                             return (
                               <button
                                 key={type}
-                                onClick={() => toggleWorkoutType(dayIndex, type)}
+                                type="button"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  toggleWorkoutType(dayIndex, type);
+                                }}
                                 className={`py-2 px-3 rounded-lg text-xs font-medium transition-all ${
                                   isSelected
                                     ? "bg-white text-[#0a0a0a]"
@@ -1415,6 +1654,7 @@ const WorkoutSetupModal = ({
           key={`setup-exercise-${exerciseModalDayIndex}`}
           show={showExerciseModal}
           dayIndex={exerciseModalDayIndex}
+          allowedCategories={workoutTypes[exerciseModalDayIndex] || []}
           onClose={() => {
             setShowExerciseModal(false);
             setExerciseModalDayIndex(null);
@@ -1462,6 +1702,7 @@ const WorkoutSetupModal = ({
 interface SetupExerciseModalProps {
   show: boolean;
   dayIndex: number | null;
+  allowedCategories?: string[];
   onClose: () => void;
   onSave: (exercise: Exercise) => void;
 }
@@ -1469,20 +1710,47 @@ interface SetupExerciseModalProps {
 const SetupExerciseModal = ({
   show,
   dayIndex,
+  allowedCategories = [],
   onClose,
   onSave,
 }: SetupExerciseModalProps) => {
   const [name, setName] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<ExerciseCategory[]>(["legs"]);
+  const [selectedCategories, setSelectedCategories] = useState<ExerciseCategory[]>([]);
   const [sets, setSets] = useState(3);
   const [reps, setReps] = useState(10);
   const [weight, setWeight] = useState("");
   const [breakTime, setBreakTime] = useState(60);
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
+  const [isNameFocused, setIsNameFocused] = useState(false);
+  const clickingCategoryRef = useRef(false);
 
   const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const categories = [
+  
+  // Map workout types to category values
+  const workoutTypeToCategory: Record<string, ExerciseCategory> = {
+    "Push": "chest",
+    "Pull": "back",
+    "Legs": "legs",
+    "Arms": "arms",
+    "Chest": "chest",
+    "Back": "back",
+    "Shoulders": "shoulders",
+    "Core": "core",
+    "Cardio": "cardio",
+    "Full Body": "full_body",
+    "Upper Body": "chest",
+    "Lower Body": "legs",
+  };
+
+  // Get allowed category values from workout types
+  const allowedCategoryValues = allowedCategories
+    .map((type) => workoutTypeToCategory[type])
+    .filter((cat): cat is ExerciseCategory => cat !== undefined);
+
+  const allCategories = [
     { value: "legs", label: "Legs" },
     { value: "arms", label: "Arms" },
     { value: "chest", label: "Chest" },
@@ -1493,15 +1761,178 @@ const SetupExerciseModal = ({
     { value: "full_body", label: "Full Body" },
   ];
 
+  // Filter categories based on allowed workout types
+  const availableCategories = allowedCategoryValues.length > 0
+    ? allCategories.filter((cat) => allowedCategoryValues.includes(cat.value as ExerciseCategory))
+    : allCategories;
+
+  // Exercise database with Planet Fitness equipment and exercises
+  const exerciseDatabase: Record<ExerciseCategory, string[]> = {
+    chest: [
+      "Bench Press", "Incline Bench Press", "Decline Bench Press", "Dumbbell Press",
+      "Incline Dumbbell Press", "Decline Dumbbell Press", "Cable Fly", "Pec Deck Machine",
+      "Push-ups", "Dips", "Chest Press Machine", "Smith Machine Bench Press",
+      "Chest Fly Machine", "Pec Deck", "Cable Crossover", "Dumbbell Flyes",
+      "Incline Cable Fly", "Decline Cable Fly", "Flat Chest Press Machine",
+      "Incline Chest Press Machine", "Decline Chest Press Machine", "Cable Chest Press",
+      "Smith Machine Incline Press", "Smith Machine Decline Press", "Dumbbell Pullover",
+      "Cable Pullover", "Push-up Variations", "Diamond Push-ups", "Wide Push-ups",
+      "Incline Push-ups", "Decline Push-ups", "Chest Dips", "Assisted Dips"
+    ],
+    back: [
+      "Pull-ups", "Lat Pulldown", "Barbell Row", "Dumbbell Row", "Cable Row",
+      "Seated Row Machine", "T-Bar Row", "Bent Over Row", "One-Arm Row",
+      "Wide Grip Pulldown", "Close Grip Pulldown", "Reverse Grip Pulldown",
+      "Reverse Fly", "Face Pull", "Shrugs", "Deadlift", "Rack Pull",
+      "Hyperextension", "Cable Lat Pulldown", "Cable High Row", "Cable Low Row",
+      "Seated Cable Row", "Standing Cable Row", "Wide Grip Cable Row",
+      "Close Grip Cable Row", "Cable Face Pull", "Cable Reverse Fly",
+      "Smith Machine Row", "Smith Machine Shrugs", "Dumbbell Shrugs",
+      "Barbell Shrugs", "Cable Shrugs", "Hyperextension Machine",
+      "Back Extension Machine", "Assisted Pull-ups", "Lat Pulldown Machine",
+      "Seated Row Machine", "Cable Reverse Fly", "Cable Upright Row"
+    ],
+    shoulders: [
+      "Overhead Press", "Dumbbell Shoulder Press", "Lateral Raise", "Front Raise",
+      "Rear Delt Fly", "Arnold Press", "Cable Lateral Raise", "Face Pull",
+      "Upright Row", "Shrugs", "Reverse Fly", "Shoulder Press Machine",
+      "Pike Push-ups", "Handstand Push-ups", "Cable Rear Delt Fly",
+      "Lateral Raise Machine", "Rear Deltoid Machine", "Shoulder Press Machine",
+      "Smith Machine Shoulder Press", "Cable Shoulder Press", "Dumbbell Lateral Raise",
+      "Cable Front Raise", "Barbell Front Raise", "Dumbbell Front Raise",
+      "Cable Upright Row", "Barbell Upright Row", "Dumbbell Upright Row",
+      "Reverse Pec Deck", "Rear Delt Machine", "Cable Lateral Raise",
+      "Dumbbell Rear Delt Fly", "Cable Rear Delt Fly", "Face Pull Machine",
+      "Shoulder Press Machine", "Overhead Press Machine", "Pike Push-ups",
+      "Wall Handstand Push-ups", "Dumbbell Arnold Press", "Cable Arnold Press"
+    ],
+    legs: [
+      "Squats", "Leg Press", "Leg Extension", "Leg Curl", "Romanian Deadlift",
+      "Bulgarian Split Squat", "Lunges", "Walking Lunges", "Calf Raises",
+      "Hack Squat", "Smith Machine Squat", "Goblet Squat", "Step-ups",
+      "Leg Press Machine", "Seated Calf Raise", "Standing Calf Raise", "Hip Thrust",
+      "Leg Extension Machine", "Seated Leg Curl", "Lying Leg Curl",
+      "Standing Leg Curl", "Hack Squat Machine", "Smith Machine Lunges",
+      "Dumbbell Lunges", "Barbell Lunges", "Reverse Lunges", "Side Lunges",
+      "Curtsy Lunges", "Jump Lunges", "Leg Press 45 Degree", "Leg Press Horizontal",
+      "Seated Leg Press", "Calf Raise Machine", "Seated Calf Raise Machine",
+      "Standing Calf Raise Machine", "Smith Machine Calf Raises", "Hip Abductor Machine",
+      "Hip Adductor Machine", "Glute Kickback Machine", "Leg Press Machine",
+      "Smith Machine Leg Press", "Dumbbell Step-ups", "Box Step-ups",
+      "Romanian Deadlift Machine", "Smith Machine RDL", "Dumbbell RDL",
+      "Barbell RDL", "Good Mornings", "Smith Machine Good Mornings",
+      "Hip Thrust Machine", "Glute Bridge", "Single Leg Press", "Pistol Squats"
+    ],
+    arms: [
+      "Bicep Curl", "Hammer Curl", "Tricep Extension", "Tricep Dips",
+      "Cable Curl", "Preacher Curl", "Concentration Curl", "Overhead Tricep Extension",
+      "Close Grip Bench Press", "Skull Crushers", "Cable Tricep Pushdown",
+      "Barbell Curl", "Dumbbell Curl", "Tricep Kickback", "Rope Cable Curl",
+      "Bicep Curl Machine", "Preacher Curl Machine", "Tricep Extension Machine",
+      "Cable Bicep Curl", "Cable Hammer Curl", "Cable Preacher Curl",
+      "Cable Concentration Curl", "Dumbbell Hammer Curl", "Barbell Hammer Curl",
+      "Cable Tricep Extension", "Overhead Cable Tricep Extension", "Dumbbell Tricep Extension",
+      "Dumbbell Overhead Extension", "Cable Overhead Extension", "Rope Tricep Pushdown",
+      "Straight Bar Tricep Pushdown", "Close Grip Cable Press", "Smith Machine Close Grip Press",
+      "Dumbbell Skull Crushers", "Cable Skull Crushers", "Tricep Dips Machine",
+      "Assisted Tricep Dips", "Cable Tricep Kickback", "Dumbbell Tricep Kickback",
+      "Reverse Grip Cable Curl", "Cable Reverse Curl", "Barbell Reverse Curl",
+      "Dumbbell Reverse Curl", "21s Bicep Curls", "Cable 21s", "Spider Curls",
+      "Cable Spider Curls", "Incline Dumbbell Curl", "Standing Cable Curl",
+      "Seated Cable Curl", "Cable Rope Hammer Curl"
+    ],
+    core: [
+      "Plank", "Crunches", "Sit-ups", "Russian Twists", "Leg Raises",
+      "Mountain Climbers", "Bicycle Crunches", "Dead Bug", "Hollow Hold",
+      "Ab Wheel", "Cable Crunch", "Hanging Leg Raise", "Side Plank",
+      "Reverse Crunch", "Flutter Kicks", "V-Ups", "Dragon Flag",
+      "Ab Crunch Machine", "Abdominal Crunch Machine", "Torso Rotation Machine",
+      "Roman Chair", "Roman Chair Sit-ups", "Roman Chair Leg Raises",
+      "Cable Crunch", "Cable Woodchopper", "Cable Side Crunch", "Cable Reverse Crunch",
+      "Cable Leg Raise", "Hanging Knee Raises", "Hanging Leg Raises",
+      "Hanging Windshield Wipers", "Plank Variations", "Side Plank",
+      "Reverse Plank", "Plank to Pike", "Plank Jacks", "Mountain Climbers",
+      "Bicycle Crunches", "Reverse Crunches", "Flutter Kicks", "Scissor Kicks",
+      "Dead Bug", "Hollow Hold", "V-Ups", "Dragon Flag", "Ab Wheel Rollout",
+      "Cable Ab Crunch", "Cable Oblique Crunch", "Russian Twists", "Weighted Russian Twists",
+      "Medicine Ball Crunches", "Stability Ball Crunches", "Decline Crunches",
+      "Incline Crunches", "Reverse Crunch Machine", "Ab Coaster", "Ab Crunch Bench"
+    ],
+    cardio: [
+      "Running", "Treadmill", "Elliptical", "Bike", "Rowing Machine",
+      "Stair Climber", "Jump Rope", "Burpees", "High Knees", "Jumping Jacks",
+      "Boxing", "Swimming", "Cycling", "HIIT", "Sprint Intervals",
+      "Treadmill Walking", "Treadmill Jogging", "Treadmill Running", "Treadmill Incline",
+      "Elliptical Trainer", "Elliptical Cross Trainer", "ARC Trainer",
+      "Stationary Bike", "Upright Bike", "Recumbent Bike", "Rowing Machine",
+      "Concept2 Rower", "Stair Climber", "StepMill", "Stepper Machine",
+      "Recumbent Stepper", "Low Impact Stepper", "Jump Rope", "Jumping Rope",
+      "Burpees", "High Knees", "Jumping Jacks", "Mountain Climbers",
+      "Boxing Bag", "Heavy Bag", "Speed Bag", "Swimming", "Pool Swimming",
+      "Cycling", "Indoor Cycling", "HIIT Cardio", "Sprint Intervals",
+      "Tabata", "Circuit Training", "Interval Training", "Steady State Cardio",
+      "LISS Cardio", "Walking", "Power Walking", "Jogging", "Running",
+      "Treadmill Intervals", "Elliptical Intervals", "Bike Intervals",
+      "Rowing Intervals", "Stair Climber Intervals", "Jump Rope Intervals"
+    ],
+    full_body: [
+      "Burpees", "Thrusters", "Clean and Press", "Kettlebell Swing",
+      "Turkish Get-up", "Man Makers", "Bear Crawl", "Mountain Climbers",
+      "Jump Squats", "Box Jumps", "Battle Ropes", "Sled Push",
+      "Full Body Circuit", "Compound Movements", "Clean and Jerk",
+      "Snatch", "Power Clean", "Deadlift", "Squat to Press", "Dumbbell Thrusters",
+      "Barbell Thrusters", "Kettlebell Thrusters", "Turkish Get-ups",
+      "Man Makers", "Bear Crawl", "Crab Walk", "Duck Walk", "Jump Squats",
+      "Box Jumps", "Plyometric Box Jumps", "Battle Ropes", "Sled Push",
+      "Farmers Walk", "Suitcase Carry", "Overhead Carry", "Rowing Machine",
+      "Full Body Rowing", "Cable Full Body", "Smith Machine Full Body",
+      "Circuit Training", "HIIT Full Body", "Tabata Full Body",
+      "Full Body Dumbbell", "Full Body Barbell", "Full Body Kettlebell"
+    ],
+  };
+
+  // Get example exercises based on selected categories
+  const getExampleExercises = (): string[] => {
+    if (selectedCategories.length === 0) return [];
+    const examples: string[] = [];
+    selectedCategories.forEach((cat) => {
+      if (exerciseDatabase[cat]) {
+        examples.push(...exerciseDatabase[cat].slice(0, 3));
+      }
+    });
+    return [...new Set(examples)].slice(0, 6);
+  };
+
+  // Filter exercise suggestions based on input
+  useEffect(() => {
+    if (name.trim().length > 0) {
+      const searchTerm = name.toLowerCase();
+      const allExercises = selectedCategories.length > 0
+        ? selectedCategories.flatMap((cat) => exerciseDatabase[cat] || [])
+        : Object.values(exerciseDatabase).flat();
+      
+      const filtered = allExercises
+        .filter((ex) => ex.toLowerCase().includes(searchTerm))
+        .slice(0, 8);
+      
+      setFilteredSuggestions(filtered);
+    } else {
+      setFilteredSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, [name, selectedCategories]);
+
   useEffect(() => {
     if (show) {
       setName("");
-      setSelectedCategories(["legs"]);
+      setSelectedCategories([]);
       setSets(3);
       setReps(10);
       setWeight("");
       setBreakTime(60);
       setNotes("");
+      setShowSuggestions(false);
+      setFilteredSuggestions([]);
     }
   }, [show]);
 
@@ -1536,7 +1967,7 @@ const SetupExerciseModal = ({
       const exercise: Exercise = {
         id: Date.now(),
         name: name.trim(),
-        categories: selectedCategories.length > 0 ? selectedCategories : ["legs"],
+        categories: selectedCategories.length > 0 ? selectedCategories : [],
         notes: notes.trim() || undefined,
         completed: false,
         selectedDays: [dayIndex],
@@ -1588,7 +2019,7 @@ const SetupExerciseModal = ({
           >
             <div className="bg-[#0a0a0a] rounded-3xl p-5 lg:p-6 border border-white/20 max-w-md w-full shadow-2xl max-h-[85vh] overflow-y-auto pointer-events-auto">
         <div className="flex items-center justify-between mb-4">
-          <div>
+              <div>
             <h3 className="text-lg font-bold mb-1">Add Exercise</h3>
             <p className="text-white/60 text-xs">
               {days[dayIndex]}
@@ -1600,34 +2031,78 @@ const SetupExerciseModal = ({
           >
             ×
           </button>
-        </div>
+              </div>
 
         <div className="space-y-3 mb-4">
-          <div>
+          <div className="relative">
             <label className="text-xs text-white/70 mb-1 block">
               Exercise Name *
             </label>
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Bench Press"
+              onChange={(e) => {
+                setName(e.target.value);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => {
+                setIsNameFocused(true);
+                if (name.trim().length > 0) {
+                  setShowSuggestions(true);
+                }
+              }}
+              onBlur={() => {
+                setIsNameFocused(false);
+                setShowSuggestions(false);
+                clickingCategoryRef.current = false;
+              }}
+              placeholder="Start typing to see suggestions..."
               className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
             />
+            {showSuggestions && filteredSuggestions.length > 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-[#0a0a0a] border border-white/20 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                {filteredSuggestions.map((suggestion, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setName(suggestion);
+                      setShowSuggestions(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm text-white hover:bg-white/10 transition-colors"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div>
+                <div>
             <label className="text-xs text-white/70 mb-1 block">
               Categories *
-            </label>
+                  </label>
             <div className="flex flex-wrap gap-2">
-              {categories.map((cat) => {
+              {availableCategories.map((cat) => {
                 const isSelected = selectedCategories.includes(cat.value as ExerciseCategory);
                 return (
                   <button
                     key={cat.value}
-                    onClick={() => toggleCategory(cat.value as ExerciseCategory)}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      clickingCategoryRef.current = true;
+                      setShowSuggestions(false);
+                    }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      toggleCategory(cat.value as ExerciseCategory);
+                      clickingCategoryRef.current = false;
+                    }}
+                    className={`category-button px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
                       isSelected
                         ? "bg-white text-[#0a0a0a] font-medium"
                         : "bg-white/5 text-white/70 border border-white/10 hover:bg-white/10"
@@ -1638,29 +2113,34 @@ const SetupExerciseModal = ({
                 );
               })}
             </div>
+            {selectedCategories.length === 0 && (
+              <div className="text-xs text-yellow-400 mt-1.5">
+                Please select at least one category
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="text-xs text-white/70 mb-1 block">Sets</label>
-              <input
-                type="number"
+                  <input
+                    type="number"
                 value={sets}
                 onChange={(e) => setSets(parseInt(e.target.value) || 1)}
-                min="1"
+                    min="1"
                 className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
-              />
-            </div>
-            <div>
+                  />
+                </div>
+                <div>
               <label className="text-xs text-white/70 mb-1 block">Reps</label>
-              <input
-                type="number"
+                  <input
+                    type="number"
                 value={reps}
                 onChange={(e) => setReps(parseInt(e.target.value) || 1)}
                 min="1"
                 className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
-              />
-            </div>
+                  />
+                </div>
             <div>
               <label className="text-xs text-white/70 mb-1 block">Weight (lbs)</label>
               <input
@@ -1671,15 +2151,15 @@ const SetupExerciseModal = ({
                 step="2.5"
                 className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none"
               />
-            </div>
+              </div>
           </div>
 
-          <div>
+              <div>
             <label className="text-xs text-white/70 mb-1 block">
               Break Time (seconds)
-            </label>
-            <input
-              type="number"
+                </label>
+                <input
+                  type="number"
               value={breakTime}
               onChange={(e) => setBreakTime(parseInt(e.target.value) || 0)}
               min="0"
@@ -1688,7 +2168,7 @@ const SetupExerciseModal = ({
             />
             <div className="text-xs text-white/50 mt-1">
               Timer will start when you complete a set
-            </div>
+              </div>
           </div>
 
           <div>
@@ -1702,7 +2182,7 @@ const SetupExerciseModal = ({
               className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-white/20 focus:outline-none min-h-[60px] resize-none"
             />
           </div>
-        </div>
+          </div>
 
         <div className="flex gap-2">
           <button
@@ -1719,8 +2199,8 @@ const SetupExerciseModal = ({
             {isSaving ? "Saving..." : "Add Exercise"}
           </button>
         </div>
-            </div>
-          </motion.div>
+        </div>
+      </motion.div>
         </>
       )}
     </AnimatePresence>

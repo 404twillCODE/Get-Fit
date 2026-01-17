@@ -6,8 +6,10 @@ import { useEffect, useState } from "react";
 import { loadAppData } from "@/lib/dataStore";
 import { formatDateKey } from "@/lib/storage";
 import WeeklyWeightReminder from "./WeeklyWeightReminder";
+import { useAuth } from "@/components/AuthProvider";
 
 const Dashboard = () => {
+  const { user, isGuest } = useAuth();
   const [todayCalories, setTodayCalories] = useState({ eaten: 0, burned: 0 });
   const [todayWorkouts, setTodayWorkouts] = useState(0);
   const [weeklyWorkouts, setWeeklyWorkouts] = useState<boolean[]>(
@@ -18,6 +20,7 @@ const Dashboard = () => {
     weeklyAverage: 0,
     streak: 0,
   });
+  const [displayName, setDisplayName] = useState("there");
 
   useEffect(() => {
     let isMounted = true;
@@ -25,6 +28,20 @@ const Dashboard = () => {
       try {
         const data = await loadAppData();
         if (!isMounted) return;
+
+        let name = user?.user_metadata?.profile?.name || data.profile?.name;
+        if (!name && isGuest) {
+          const guestProfile = localStorage.getItem("guestProfile");
+          if (guestProfile) {
+            try {
+              const parsed = JSON.parse(guestProfile);
+              name = parsed?.name;
+            } catch (err) {
+              console.warn("Error parsing guest profile:", err);
+            }
+          }
+        }
+        setDisplayName(name || "there");
 
         // Normalize today's date to ensure consistent date key format (using local time)
         const today = new Date();
@@ -135,187 +152,175 @@ const Dashboard = () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", handleFocus);
     };
-  }, []);
+  }, [user, isGuest]);
 
   const deficit = todayCalories.eaten - todayCalories.burned;
 
   return (
-    <div className="max-w-md lg:max-w-7xl mx-auto min-h-screen bg-[#0a0a0a]">
-      {/* Header */}
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="pt-12 pb-6 sm:pb-8 px-4 sm:px-6 lg:px-8"
-      >
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-2 bg-gradient-to-r from-white via-white to-white/80 bg-clip-text text-transparent">
-          Get Fit
-        </h1>
-        <p className="text-white/60 text-xs sm:text-sm lg:text-base">
-          {new Date().toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-          })}
-        </p>
-      </motion.header>
-
-      {/* Desktop Layout: Stats and Insights Side by Side */}
-      <div className="px-4 sm:px-6 lg:px-8 mb-4 sm:mb-6 lg:grid lg:grid-cols-2 lg:gap-6">
-        {/* Quick Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
+    <div className="min-h-screen bg-[#0a0a0a]">
+      <div className="max-w-md lg:max-w-6xl mx-auto">
+        <motion.header
+          initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-gradient-to-br from-white/5 to-white/0 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 border border-white/10 mb-4 lg:mb-0"
+          className="pt-10 pb-6 sm:pb-8 px-4 sm:px-6 lg:px-8"
         >
-          <div className="text-white/60 text-xs sm:text-sm lg:text-base mb-2">Today&apos;s Deficit</div>
-          <div
-            className={`text-3xl sm:text-4xl lg:text-5xl font-bold ${
-              deficit <= 0 ? "text-green-400" : "text-red-400"
-            }`}
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-2">
+                Welcome, {displayName}
+              </h1>
+              <div className="text-white/50 text-xs sm:text-sm lg:text-base mb-1">
+                Get Fit
+              </div>
+              <p className="text-white/60 text-xs sm:text-sm lg:text-base">
+                {new Date().toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </p>
+            </div>
+            <div className="hidden sm:flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/60">
+              <span className="h-2 w-2 rounded-full bg-emerald-400/80" />
+              Tracking today
+            </div>
+          </div>
+        </motion.header>
+
+        <div className="px-4 sm:px-6 lg:px-8 space-y-6">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08 }}
+            className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-white/5 to-white/0 p-5 sm:p-6 lg:p-8"
           >
-            {deficit >= 0 ? "+" : ""}
-            {Math.round(deficit).toLocaleString()}
-          </div>
-          <div className="text-white/40 text-xs sm:text-sm mt-2">
-            {todayCalories.burned} burned - {todayCalories.eaten} eaten
-          </div>
-        </motion.div>
-
-        {/* Insights */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.12 }}
-          className="bg-white/5 rounded-2xl p-4 sm:p-5 lg:p-6 border border-white/10"
-        >
-          <div className="text-white/60 text-xs sm:text-sm lg:text-base mb-3 sm:mb-4">Insights</div>
-          <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4 text-center">
-            <div className="rounded-xl bg-white/5 py-2 sm:py-3 lg:py-4 px-1 sm:px-2 lg:px-3 border border-white/10">
-              <div className="text-xs sm:text-sm text-white/50 mb-1">Streak</div>
-              <div className="text-base sm:text-lg lg:text-xl font-semibold">{insights.streak} days</div>
-            </div>
-            <div className="rounded-xl bg-white/5 py-2 sm:py-3 lg:py-4 px-1 sm:px-2 lg:px-3 border border-white/10">
-              <div className="text-xs sm:text-sm text-white/50 mb-1">7-Day Avg</div>
-              <div
-                className={`text-base sm:text-lg lg:text-xl font-semibold ${
-                  insights.weeklyAverage <= 0 ? "text-green-400" : "text-red-400"
-                }`}
-              >
-                {insights.weeklyAverage >= 0 ? "+" : ""}
-                {insights.weeklyAverage}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-white/60 text-xs sm:text-sm mb-2">Today&apos;s Deficit</div>
+                <div
+                  className={`text-4xl sm:text-5xl font-semibold ${
+                    deficit <= 0 ? "text-green-400" : "text-red-400"
+                  }`}
+                >
+                  {deficit >= 0 ? "+" : ""}
+                  {Math.round(deficit).toLocaleString()}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                  <div className="text-[11px] uppercase tracking-wide text-white/40">Calories eaten</div>
+                  <div className="text-lg font-semibold text-white">{todayCalories.eaten}</div>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                  <div className="text-[11px] uppercase tracking-wide text-white/40">Calories burned</div>
+                  <div className="text-lg font-semibold text-white">{todayCalories.burned}</div>
+                </div>
               </div>
             </div>
-            <div className="rounded-xl bg-white/5 py-2 sm:py-3 lg:py-4 px-1 sm:px-2 lg:px-3 border border-white/10">
-              <div className="text-xs sm:text-sm text-white/50 mb-1">Days Logged</div>
-              <div className="text-base sm:text-lg lg:text-xl font-semibold">{insights.totalLoggedDays}</div>
-            </div>
+          </motion.div>
+
+          <div className="grid gap-4 lg:grid-cols-3">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.14 }}
+              className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-5"
+            >
+              <div className="text-white/60 text-xs sm:text-sm mb-3">Insights</div>
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="rounded-xl bg-white/5 border border-white/10 py-2">
+                  <div className="text-[11px] text-white/50 mb-1">Streak</div>
+                  <div className="text-base font-semibold">{insights.streak}</div>
+                </div>
+                <div className="rounded-xl bg-white/5 border border-white/10 py-2">
+                  <div className="text-[11px] text-white/50 mb-1">7-Day Avg</div>
+                  <div className={`text-base font-semibold ${insights.weeklyAverage <= 0 ? "text-green-400" : "text-red-400"}`}>
+                    {insights.weeklyAverage >= 0 ? "+" : ""}
+                    {insights.weeklyAverage}
+                  </div>
+                </div>
+                <div className="rounded-xl bg-white/5 border border-white/10 py-2">
+                  <div className="text-[11px] text-white/50 mb-1">Logged</div>
+                  <div className="text-base font-semibold">{insights.totalLoggedDays}</div>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.18 }}
+              className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-5 lg:col-span-2"
+            >
+              <div className="text-white/60 text-xs sm:text-sm mb-3">Quick Actions</div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Link href="/workouts" className="group rounded-2xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[11px] uppercase tracking-wide text-white/50 mb-1">Workout</div>
+                      <div className="text-base font-semibold text-white">
+                        {todayWorkouts > 0
+                          ? `${todayWorkouts} Exercise${todayWorkouts !== 1 ? "s" : ""}`
+                          : "Start Workout"}
+                      </div>
+                    </div>
+                    <div className="text-2xl">💪</div>
+                  </div>
+                </Link>
+                <Link href="/calories" className="group rounded-2xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[11px] uppercase tracking-wide text-white/50 mb-1">Deficit</div>
+                      <div className="text-base font-semibold text-white">
+                        {todayCalories.eaten > 0 || todayCalories.burned > 0 ? "Update Today" : "Log Data"}
+                      </div>
+                    </div>
+                    <div className="text-2xl">🔥</div>
+                  </div>
+                </Link>
+                <Link href="/insights" className="group rounded-2xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[11px] uppercase tracking-wide text-white/50 mb-1">Insights</div>
+                      <div className="text-base font-semibold text-white">View Stats</div>
+                    </div>
+                    <div className="text-2xl">📈</div>
+                  </div>
+                </Link>
+              </div>
+            </motion.div>
           </div>
-        </motion.div>
-      </div>
 
-
-      {/* Quick Actions */}
-      <div className="px-4 sm:px-6 lg:px-8 space-y-3 sm:space-y-4 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0 mb-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <Link href="/workouts" className="block active:scale-[0.98] transition-transform touch-manipulation cursor-pointer">
-            <div className="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10 hover:bg-white/10 active:bg-white/15 active:border-white/20 transition-all touch-manipulation min-h-[80px] sm:min-h-[auto] pointer-events-auto">
-              <div className="flex items-center justify-between pointer-events-none">
-                <div className="flex-1 min-w-0">
-                  <div className="text-white/60 text-xs sm:text-sm mb-1">Workout Routine</div>
-                  <div className="text-lg sm:text-xl font-semibold truncate">
-                    {todayWorkouts > 0
-                      ? `${todayWorkouts} Exercise${todayWorkouts !== 1 ? "s" : ""}`
-                      : "Start Workout"}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.22 }}
+            className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-5 mb-6 pb-20 sm:pb-6"
+          >
+            <div className="text-white/60 text-xs sm:text-sm mb-3">This Week</div>
+            <div className="flex justify-between items-end gap-2">
+              {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => {
+                const dayIndex = index;
+                const hasWorkout = weeklyWorkouts[dayIndex] || false;
+                const isToday = dayIndex === new Date().getDay();
+                return (
+                  <div key={`weekday-${index}`} className="flex-1 flex flex-col items-center">
+                    <div
+                      className={`w-full rounded-full transition-all ${
+                        hasWorkout
+                          ? "bg-gradient-to-t from-blue-500/70 to-blue-500/40 h-8"
+                          : "bg-white/5 h-2"
+                      } ${isToday ? "ring-2 ring-white/30" : ""}`}
+                    />
+                    <div className={`text-xs mt-2 ${isToday ? "text-white" : "text-white/40"}`}>
+                      {day}
+                    </div>
                   </div>
-                </div>
-                <div className="text-2xl sm:text-3xl ml-3 flex-shrink-0">💪</div>
-              </div>
+                );
+              })}
             </div>
-          </Link>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Link href="/calories" className="block active:scale-[0.98] transition-transform touch-manipulation cursor-pointer">
-            <div className="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10 hover:bg-white/10 active:bg-white/15 active:border-white/20 transition-all touch-manipulation min-h-[80px] sm:min-h-[auto] pointer-events-auto">
-              <div className="flex items-center justify-between pointer-events-none">
-                <div className="flex-1 min-w-0">
-                  <div className="text-white/60 text-xs sm:text-sm mb-1">Deficit Calculator</div>
-                  <div className="text-lg sm:text-xl font-semibold truncate">
-                    {todayCalories.eaten > 0 || todayCalories.burned > 0
-                      ? "Update Today"
-                      : "Log Data"}
-                  </div>
-                </div>
-                <div className="text-2xl sm:text-3xl ml-3 flex-shrink-0">🔥</div>
-              </div>
-            </div>
-          </Link>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <Link href="/insights" className="block active:scale-[0.98] transition-transform touch-manipulation cursor-pointer">
-            <div className="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10 hover:bg-white/10 active:bg-white/15 active:border-white/20 transition-all touch-manipulation min-h-[80px] sm:min-h-[auto] pointer-events-auto">
-              <div className="flex items-center justify-between pointer-events-none">
-                <div className="flex-1 min-w-0">
-                  <div className="text-white/60 text-xs sm:text-sm mb-1">Insights</div>
-                  <div className="text-lg sm:text-xl font-semibold truncate">
-                    View Stats
-                  </div>
-                </div>
-                <div className="text-2xl sm:text-3xl ml-3 flex-shrink-0">📈</div>
-              </div>
-            </div>
-          </Link>
-        </motion.div>
-      </div>
-
-      {/* Weekly Progress */}
-      <div className="px-4 sm:px-6 mb-6 pb-20 sm:pb-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10"
-        >
-          <div className="text-white/60 text-xs sm:text-sm mb-3 sm:mb-4">This Week</div>
-          <div className="flex justify-between items-end gap-2">
-            {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => {
-              const dayIndex = index;
-              const hasWorkout = weeklyWorkouts[dayIndex] || false;
-              const isToday = dayIndex === new Date().getDay();
-
-              return (
-                <div key={`weekday-${index}`} className="flex-1 flex flex-col items-center">
-                  <div
-                    className={`w-full rounded-t-lg transition-all ${
-                      hasWorkout
-                        ? "bg-gradient-to-t from-blue-500/60 to-blue-500/40 h-8"
-                        : "bg-white/5 h-2"
-                    } ${isToday ? "ring-2 ring-white/30" : ""}`}
-                  />
-                  <div
-                    className={`text-xs mt-2 ${isToday ? "text-white" : "text-white/40"}`}
-                  >
-                    {day}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
       <WeeklyWeightReminder />
     </div>
