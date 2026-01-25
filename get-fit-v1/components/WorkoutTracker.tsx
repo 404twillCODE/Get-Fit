@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { loadAppData, updateAppData } from "@/lib/dataStore";
 import { formatDateKey } from "@/lib/storage";
+import { getDefaultWorkoutRoutine, getDefaultWorkoutSchedule, type Exercise as RoutineExercise } from "@/lib/workoutRoutine";
 
 interface Set {
   setNumber: number;
@@ -354,6 +355,48 @@ const WorkoutTracker = () => {
     await loadDayWorkouts();
   };
 
+  const initializeDefaultRoutine = async () => {
+    if (!confirm("This will replace your current workout routine with the default 4-day split (Push, Pull, Legs, Full Upper). Continue?")) {
+      return;
+    }
+
+    try {
+      const defaultExercises = getDefaultWorkoutRoutine();
+      const defaultSchedule = getDefaultWorkoutSchedule();
+
+      // Organize exercises by day
+      const savedWorkouts: Exercise[][] = Array.from({ length: 7 }, () => []);
+      
+      defaultExercises.forEach((exercise) => {
+        const exerciseDays = exercise.selectedDays || [];
+        if (exerciseDays.length === 0) {
+          // Add to all days if no selection
+          for (let i = 0; i < 7; i++) {
+            savedWorkouts[i].push(exercise as Exercise);
+          }
+        } else {
+          exerciseDays.forEach((day) => {
+            savedWorkouts[day].push(exercise as Exercise);
+          });
+        }
+      });
+
+      await updateAppData((current) => ({
+        ...current,
+        savedWorkouts,
+        workoutSchedule: defaultSchedule,
+        workoutSetupComplete: true,
+      }));
+
+      await loadWorkoutSchedule();
+      await loadDayWorkouts();
+      alert("Default workout routine initialized successfully!");
+    } catch (error) {
+      console.error("Error initializing routine:", error);
+      alert("Failed to initialize routine. Please try again.");
+    }
+  };
+
   const completeWorkout = async () => {
     if (workouts.length === 0) {
       alert("Add at least one exercise before completing the workout");
@@ -498,8 +541,8 @@ const WorkoutTracker = () => {
         </AnimatePresence>
       )}
 
-      {/* Add Exercise Button */}
-      <div className="px-4 sm:px-6 lg:px-8 mb-6 flex justify-center">
+      {/* Add Exercise Button and Initialize Routine */}
+      <div className="px-4 sm:px-6 lg:px-8 mb-6 flex flex-col sm:flex-row gap-3 justify-center">
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
@@ -507,9 +550,17 @@ const WorkoutTracker = () => {
             setEditingExercise(null);
             setShowModal(true);
           }}
-          className="w-full lg:w-auto lg:px-8 py-4 bg-white text-[#0a0a0a] rounded-2xl font-semibold text-lg"
+          className="w-full sm:w-auto sm:px-8 py-4 bg-white text-[#0a0a0a] rounded-2xl font-semibold text-lg"
         >
           + Add Exercise
+        </motion.button>
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={initializeDefaultRoutine}
+          className="w-full sm:w-auto sm:px-8 py-4 bg-blue-500 text-white rounded-2xl font-semibold text-lg hover:bg-blue-600"
+        >
+          Initialize 4-Day Routine
         </motion.button>
       </div>
 
