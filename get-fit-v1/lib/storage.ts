@@ -36,25 +36,12 @@ export type WeightEntry = {
   timestamp: number;
 };
 
-export type UserProfile = {
-  name?: string;
-  age?: number;
-  height?: number; // in inches or cm
-  currentWeight?: number;
-  goalWeight?: number;
-  activityLevel?: "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extremely_active";
-  fitnessGoal?: "lose_weight" | "maintain_weight" | "gain_weight" | "build_muscle" | "improve_endurance";
-};
-
 export type AppData = {
   deficitEntries: DeficitEntry[];
   savedWorkouts: unknown[][];
   workoutHistory: WorkoutHistoryEntry[];
   workoutSchedule: string[];
   weightHistory: WeightEntry[];
-  profile?: UserProfile;
-  profileSetupComplete?: boolean;
-  workoutSetupComplete?: boolean;
 };
 
 export const STORAGE_KEYS = [
@@ -80,14 +67,11 @@ export const getDefaultData = (): AppData => ({
   workoutHistory: [],
   workoutSchedule: Array(7).fill("Rest Day"),
   weightHistory: [],
-  profile: undefined,
-  profileSetupComplete: false,
-  workoutSetupComplete: false,
 });
 
-export const getLocalData = (includeGuestProfile = false): AppData => {
+export const getLocalData = (): AppData => {
   const fallback = getDefaultData();
-  const data: AppData = {
+  return {
     deficitEntries: safeJsonParse<DeficitEntry[]>(
       localStorage.getItem("deficitEntries"),
       fallback.deficitEntries
@@ -108,25 +92,7 @@ export const getLocalData = (includeGuestProfile = false): AppData => {
       localStorage.getItem("weightHistory"),
       fallback.weightHistory
     ),
-    profile: fallback.profile,
-    profileSetupComplete: fallback.profileSetupComplete,
   };
-  
-  // Only load profile from localStorage if explicitly requested (for guest users)
-  // This prevents guest profile data from being synced to authenticated users
-  if (includeGuestProfile) {
-    const guestProfile = localStorage.getItem("guestProfile");
-    if (guestProfile) {
-      try {
-        data.profile = JSON.parse(guestProfile);
-        data.profileSetupComplete = localStorage.getItem("guestProfileSetupComplete") === "true";
-      } catch {
-        // Ignore parse errors
-      }
-    }
-  }
-  
-  return data;
 };
 
 export const setLocalData = (data: AppData) => {

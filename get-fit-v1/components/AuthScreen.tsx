@@ -72,19 +72,6 @@ const AuthScreen = () => {
         return;
       }
       errorMessage = await signIn(email, password);
-      
-      // If user doesn't exist, redirect to signup with pre-filled data
-      if (errorMessage && (
-        errorMessage.toLowerCase().includes("invalid login credentials") ||
-        errorMessage.toLowerCase().includes("user not found") ||
-        errorMessage.toLowerCase().includes("email not confirmed") ||
-        errorMessage.toLowerCase().includes("invalid credentials")
-      )) {
-        setMode("signup");
-        setStatus("You don't have an account yet. Create one below!");
-        setIsLoading(false);
-        return;
-      }
     } else if (mode === "signup") {
       errorMessage = await signUp(email, password);
       if (!errorMessage) {

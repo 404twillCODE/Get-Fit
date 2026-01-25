@@ -112,6 +112,33 @@ const ProfilePage = () => {
     loadData();
   }, [user, isGuest]);
 
+<<<<<<< Updated upstream:get-fit-v1/components/ProfilePage.tsx
+=======
+  const loadUserProfile = async () => {
+    if (user) {
+      // Load from Supabase user metadata for authenticated users
+      const supabase = getSupabaseClient();
+      if (!supabase) return;
+      
+      const profile = user.user_metadata?.profile as UserProfile | undefined;
+      if (profile) {
+        setUserProfile(profile);
+      }
+    } else if (isGuest) {
+      // Load from localStorage for guest users
+      const guestProfile = localStorage.getItem("guestProfile");
+      if (guestProfile) {
+        try {
+          setUserProfile(JSON.parse(guestProfile));
+        } catch (err) {
+          console.error("Error parsing guest profile:", err);
+        }
+      }
+    }
+  };
+
+  // When modal opens, ensure today's date is selected and set as last clicked
+>>>>>>> Stashed changes:components/Insights.tsx
   useEffect(() => {
     if (showCopyModal) {
       const today = new Date();

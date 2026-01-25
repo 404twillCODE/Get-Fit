@@ -9,57 +9,23 @@ import {
 const USER_DATA_TABLE = "user_data";
 
 const getSessionUserId = async (): Promise<string | null> => {
-  if (!isSupabaseConfigured) {
-    return null;
-  }
+  if (!isSupabaseConfigured) return null;
   const supabase = getSupabaseClient();
-  if (!supabase) {
-    return null;
-  }
-  try {
-    const { data, error } = await supabase.auth.getSession();
-    if (error) {
-      console.error("Error getting session:", error);
-      return null;
-    }
-    return data.session?.user?.id ?? null;
-  } catch (err) {
-    console.error("Exception getting session:", err);
-    return null;
-  }
+  if (!supabase) return null;
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user?.id ?? null;
 };
 
 const fetchRemoteData = async (userId: string): Promise<AppData | null> => {
   const supabase = getSupabaseClient();
-  if (!supabase) {
-    console.warn("Supabase client not available for fetchRemoteData");
-    return null;
-  }
-  try {
-    const { data, error } = await supabase
-      .from(USER_DATA_TABLE)
-      .select("data")
-      .eq("id", userId)
-      .single();
-    
-    if (error) {
-      // 406 or PGRST116 means no row found, which is fine for new users
-      if (error.code === "PGRST116" || error.message?.includes("No rows")) {
-        return null;
-      }
-      console.error("Error fetching remote data:", error);
-      return null;
-    }
-    
-    if (!data?.data) {
-      return null;
-    }
-    
-    return data.data as AppData;
-  } catch (err) {
-    console.error("Exception in fetchRemoteData:", err);
-    return null;
-  }
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from(USER_DATA_TABLE)
+    .select("data")
+    .eq("id", userId)
+    .single();
+  if (error || !data?.data) return null;
+  return data.data as AppData;
 };
 
 const upsertRemoteData = async (
@@ -90,12 +56,6 @@ const upsertRemoteData = async (
 
       if (error) {
         console.error(`Supabase upsert error (attempt ${attempt}/${retries}):`, error);
-        console.error("Error details:", {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint,
-        });
         if (attempt === retries) {
           // Store failed data for retry later
           if (typeof window !== "undefined") {
@@ -181,8 +141,7 @@ const upsertRemoteData = async (
 export const loadAppData = async (): Promise<AppData> => {
   const userId = await getSessionUserId();
   if (!userId) {
-    // For guest users, include guest profile data
-    return getLocalData(true);
+    return getLocalData();
   }
 
   const remoteData = await fetchRemoteData(userId);
@@ -191,8 +150,7 @@ export const loadAppData = async (): Promise<AppData> => {
     return remoteData;
   }
 
-  // For authenticated users, exclude guest profile data to prevent overwriting
-  const localData = getLocalData(false);
+  const localData = getLocalData();
   await upsertRemoteData(userId, localData);
   return localData;
 };
@@ -201,6 +159,7 @@ export const saveAppData = async (data: AppData): Promise<boolean> => {
   setLocalData(data);
   const userId = await getSessionUserId();
   if (!userId) {
+    console.log("No user ID, saving locally only");
     return true; // Successfully saved locally
   }
   const success = await upsertRemoteData(userId, data);
@@ -227,8 +186,7 @@ export const ensureUserData = async () => {
     setLocalData(remoteData);
     return;
   }
-  // Exclude guest profile data for authenticated users
-  await upsertRemoteData(userId, getLocalData(false));
+  await upsertRemoteData(userId, getLocalData());
 };
 
 export const pullFromSupabase = async (): Promise<AppData | null> => {
@@ -243,8 +201,7 @@ export const pullFromSupabase = async (): Promise<AppData | null> => {
 export const pushToSupabase = async (): Promise<boolean> => {
   const userId = await getSessionUserId();
   if (!userId) return false;
-  // Exclude guest profile data for authenticated users
-  const localData = getLocalData(false);
+  const localData = getLocalData();
   return await upsertRemoteData(userId, localData);
 };
 

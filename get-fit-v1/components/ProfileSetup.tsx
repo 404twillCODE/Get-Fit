@@ -4,10 +4,20 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/components/AuthProvider";
 import { getSupabaseClient } from "@/lib/supabaseClient";
+<<<<<<< Updated upstream:get-fit-v1/components/ProfileSetup.tsx
 import { type UserProfile } from "@/lib/storage";
+=======
+>>>>>>> Stashed changes:components/ProfileSetup.tsx
 
-// Re-export for backward compatibility
-export type { UserProfile };
+export type UserProfile = {
+  name?: string;
+  age?: number;
+  height?: number; // in inches or cm
+  currentWeight?: number;
+  goalWeight?: number;
+  activityLevel?: "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extremely_active";
+  fitnessGoal?: "lose_weight" | "maintain_weight" | "gain_weight" | "build_muscle" | "improve_endurance";
+};
 
 const ProfileSetup = ({ 
   onComplete, 
@@ -54,16 +64,43 @@ const ProfileSetup = ({
     
     try {
       if (user) {
+<<<<<<< Updated upstream:get-fit-v1/components/ProfileSetup.tsx
         // Save to Supabase user metadata
         const supabase = getSupabaseClient();
         if (!supabase) {
           clearTimeout(timeoutId);
           setError("Unable to save profile. Supabase not configured.");
+=======
+        // Save to Supabase user metadata for authenticated users
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+          setError("Unable to save profile.");
+>>>>>>> Stashed changes:components/ProfileSetup.tsx
           setIsSaving(false);
           return;
         }
 
+<<<<<<< Updated upstream:get-fit-v1/components/ProfileSetup.tsx
         // Save directly to user metadata with timeout protection
+=======
+        console.log("Saving profile to Supabase:", profile);
+        
+        // Ensure we have a valid session before updating
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || !sessionData.session) {
+          console.error("No valid session found:", sessionError);
+          setError("Session expired. Please refresh the page and try again.");
+          setIsSaving(false);
+          return;
+        }
+        
+        // Add timeout to prevent infinite hanging
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error("Request timeout. Please try again.")), 10000);
+        });
+
+        // Make the update request with error handling and timeout
+>>>>>>> Stashed changes:components/ProfileSetup.tsx
         const updatePromise = supabase.auth.updateUser({
           data: {
             profile: profile,
@@ -71,6 +108,7 @@ const ProfileSetup = ({
           },
         });
 
+<<<<<<< Updated upstream:get-fit-v1/components/ProfileSetup.tsx
         const timeoutPromise = new Promise<never>((_, reject) => 
           setTimeout(() => reject(new Error("Request timeout")), 10000)
         );
@@ -102,6 +140,70 @@ const ProfileSetup = ({
         requestAnimationFrame(() => {
           onComplete();
         });
+=======
+        const updateResult = await Promise.race([updatePromise, timeoutPromise]) as Awaited<ReturnType<typeof supabase.auth.updateUser>>;
+
+        const { data, error: updateError } = updateResult;
+
+        console.log("Update result:", { data, error: updateError });
+
+        if (updateError) {
+          console.error("Supabase update error:", updateError);
+          
+          // Handle 406 Not Acceptable error specifically
+          if (updateError.status === 406 || updateError.message?.includes("406")) {
+            setError("Unable to save profile. Please refresh the page and try again.");
+            setIsSaving(false);
+            return;
+          }
+          
+          // If it's an abort error, try once more
+          if (updateError.message?.toLowerCase().includes("abort") || updateError.name === "AbortError") {
+            console.log("Abort error detected, retrying once...");
+            await new Promise(resolve => setTimeout(resolve, 500)); // Small delay before retry
+            
+            const retryPromise = supabase.auth.updateUser({
+              data: {
+                profile: profile,
+                profileSetupComplete: true,
+              },
+            });
+            
+            const retryResult = await Promise.race([retryPromise, timeoutPromise]) as Awaited<ReturnType<typeof supabase.auth.updateUser>>;
+            
+            if (retryResult.error) {
+              setError("Connection issue. Please try again.");
+              setIsSaving(false);
+              return;
+            }
+            // Retry succeeded, continue to success
+          } else {
+            setError(updateError.message || "Failed to save profile.");
+            setIsSaving(false);
+            return;
+          }
+        }
+        
+        // Refresh the session to ensure metadata is updated
+        try {
+          const { error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError) {
+            console.warn("Session refresh warning:", refreshError);
+            // Don't fail the save if refresh fails, the update might still have worked
+          }
+        } catch (refreshErr) {
+          console.warn("Session refresh error:", refreshErr);
+          // Continue anyway
+        }
+        
+        console.log("Profile saved successfully");
+        // Success - show success message briefly, then close
+        setSuccess(true);
+        setIsSaving(false);
+        setTimeout(() => {
+          onComplete();
+        }, 1000);
+>>>>>>> Stashed changes:components/ProfileSetup.tsx
       } else {
         // Save to localStorage for guest users
         try {

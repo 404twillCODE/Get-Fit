@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabaseClient";
-import { ensureUserData, startPeriodicSync, retryFailedSyncs, loadAppData } from "@/lib/dataStore";
+import { ensureUserData, startPeriodicSync, retryFailedSyncs } from "@/lib/dataStore";
 import { getLocalData } from "@/lib/storage";
 
 type AuthContextValue = {
@@ -93,6 +93,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                   localStorage.removeItem(GUEST_MODE_KEY);
                 }
                 // Check if profile setup is needed
+<<<<<<< Updated upstream:get-fit-v1/components/AuthProvider.tsx
                 // Check user_metadata first (where profile is saved), then fallback to user_data table
                 let profileSetupComplete = data.session.user.user_metadata?.profileSetupComplete === true;
                 
@@ -110,23 +111,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 
                 if (!mounted) return; // Re-check before state updates
                 
+=======
+                const profileSetupComplete = data.session.user.user_metadata?.profileSetupComplete;
+>>>>>>> Stashed changes:components/AuthProvider.tsx
                 if (!profileSetupComplete) {
                   setShowProfileSetup(true);
                 }
                 try {
                   await ensureUserData();
-                  if (!mounted) return; // Re-check after async operation
                   // Retry any failed syncs when user logs in
                   await retryFailedSyncs();
-                  if (!mounted) return; // Re-check after async operation
                 } catch (err) {
-                  if (!mounted) return; // Re-check after async operation
                   console.error("Error ensuring user data:", err);
                 }
               }
-            if (mounted) {
-              setLoading(false);
-            }
+            setLoading(false);
           }
         } catch (err) {
           console.error("Error getting session:", err);
@@ -144,6 +143,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                   localStorage.removeItem(GUEST_MODE_KEY);
                 }
                 // Check if profile setup is needed
+<<<<<<< Updated upstream:get-fit-v1/components/AuthProvider.tsx
                 // Check user_metadata first (where profile is saved), then fallback to user_data table
                 let profileSetupComplete = newSession.user.user_metadata?.profileSetupComplete === true;
                 
@@ -161,17 +161,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 
                 if (!mounted) return; // Re-check before state updates
                 
+=======
+                const profileSetupComplete = newSession.user.user_metadata?.profileSetupComplete;
+>>>>>>> Stashed changes:components/AuthProvider.tsx
                 if (!profileSetupComplete) {
                   setShowProfileSetup(true);
                 }
                 try {
                   await ensureUserData();
-                  if (!mounted) return; // Re-check after async operation
                   // Retry any failed syncs when user logs in
                   await retryFailedSyncs();
-                  if (!mounted) return; // Re-check after async operation
                 } catch (err) {
-                  if (!mounted) return; // Re-check after async operation
                   console.error("Error ensuring user data:", err);
                 }
               }

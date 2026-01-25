@@ -106,17 +106,15 @@ const WeightTracker = ({ onClose }: { onClose: () => void }) => {
   };
 
   const handleDelete = async (date: string) => {
-    await updateAppData((current) => {
-      const updatedHistory = (current.weightHistory || []).filter(entry => entry.date !== date);
-      return {
-        ...current,
-        weightHistory: updatedHistory,
-      };
+    const data = await loadAppData();
+    const updatedHistory = (data.weightHistory || []).filter(entry => entry.date !== date);
+    
+    await updateAppData({
+      ...data,
+      weightHistory: updatedHistory,
     });
     
-    // Reload to get the updated history
-    const data = await loadAppData();
-    setWeightHistory(data.weightHistory || []);
+    setWeightHistory(updatedHistory);
   };
 
   const getLatestWeight = () => {
